@@ -1,0 +1,43 @@
+#version 310 es
+
+layout (location = 0) in vec3 vPosition;
+layout(location = 1) in vec2 uv;
+
+layout(binding = 0) uniform Input0 {
+    vec2 viewSize;
+    vec2 texSize;
+} input0;
+
+layout(binding = 0) buffer Input1 {
+    vec2 viewSize;
+    vec2 texSize;
+} input1;
+
+out vec2 texCoord;
+
+void main() {
+
+    vec2 viewSize = input1.viewSize;
+    vec2 texSize = input1.texSize;
+
+    float hRate = viewSize.x / texSize.x;
+    float vRate = viewSize.y / texSize.y;
+    vec2 newTexSize;
+    vec3 v;
+    v.z=0.0f;
+    if(hRate < vRate){
+        newTexSize = texSize * hRate;
+        hRate=1.0;
+        vRate=newTexSize.y/viewSize.y;
+    }
+    else{
+        newTexSize = texSize * vRate;
+        hRate=newTexSize.x/viewSize.x;
+        vRate=1.0;
+    }
+    v.x = vPosition.x * hRate;
+    v.y = vPosition.y * vRate;
+
+    gl_Position = vec4(v, 1.0);
+    texCoord = uv;
+}

@@ -1,4 +1,4 @@
-#version 320 es
+#version 310 es
 
 uniform float roll;
 layout (rgba32f,binding = 0) writeonly uniform highp image2D data;

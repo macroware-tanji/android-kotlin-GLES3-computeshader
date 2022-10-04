@@ -10,11 +10,15 @@ class MyGLRenderer (context: Context): GLSurfaceView.Renderer {
 
     private lateinit var mTriangle: Triangle
     private lateinit var mTextMap: TexMap
+    private lateinit var mTextMap2: TexMap2
+    private lateinit var mTextMap3: TexMap3
     private lateinit var mCompShader: CompShader
     //private lateinit var mCompShader2: CompShader2
     //private lateinit var mCompShader3: CompShader3
     private lateinit var mCompShader4: CompShader4
     private var context: Context
+    private var width:Int=0
+    private var height:Int=0
 
     init {
         this.context = context
@@ -27,7 +31,8 @@ class MyGLRenderer (context: Context): GLSurfaceView.Renderer {
         mTriangle = Triangle(context)
         mCompShader = CompShader(context,512,512,1, GLES32.GL_RGBA32F,GLES32.GL_RGBA,GLES32.GL_FLOAT,"shader.es30-3.computeshader")
         mTextMap = TexMap(context,null)
-
+        mTextMap2 = TexMap2(context)
+        mTextMap3 = TexMap3(context)
 //        mCompShader2=CompShader2(context,"shader.es30-4.computeshader")
 //        mCompShader2.execute()
 
@@ -45,11 +50,16 @@ class MyGLRenderer (context: Context): GLSurfaceView.Renderer {
 
         //mTriangle.draw()
         //mTextMap.draw()
-        mCompShader.execute()
-        mTextMap.draw(mCompShader.texId)
+
+        //mCompShader.execute()
+        //mTextMap.draw(mCompShader.texId)
+
+        mTextMap3.draw(width.toFloat(),height.toFloat())
     }
 
     override fun onSurfaceChanged(unused: GL10, width: Int, height: Int) {
+        this.width = width
+        this.height = height
         GLES32.glViewport(0, 0, width, height)
     }
 }
