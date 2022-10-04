@@ -36,4 +36,7 @@ class IndexBufferObject {
         GLES32.glBufferData(GLES32.GL_ELEMENT_ARRAY_BUFFER,size,buffer,usage.v)
         //return ids[0]
     }
+    public fun bufferSubData(offset: Int,size:Int, buffer: Buffer){
+        GLES32.glBufferSubData(GLES32.GL_ELEMENT_ARRAY_BUFFER,offset,size,buffer)
+    }
 }

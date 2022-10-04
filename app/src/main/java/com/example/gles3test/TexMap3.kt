@@ -212,9 +212,22 @@ class TexMap3(context: Context) {
 //        GLES32.glBindBuffer(GLES32.GL_ELEMENT_ARRAY_BUFFER, ibo[0]);
 //        GLES32.glBufferData(GLES32.GL_ELEMENT_ARRAY_BUFFER,indexes.size * 2,indexBuffer,GLES32.GL_STATIC_DRAW)
 //        GLES32.glBindBuffer(GLES32.GL_ELEMENT_ARRAY_BUFFER, 0);
+        
+        var dims = FloatBuffer.allocate(4)
+        dims.put(0,0.0f)
+        dims.put(1,0.0f)
+        dims.put(2,0.0f)
+        dims.put(3,0.0f)
 
         uboDims.gen()
+        uboDims.bind()
+        uboDims.bufferData(dims.capacity()*4,dims,DataStoreUsage.DYNAMIC_DRAW)
+        uboDims.bindBufferBase(0)
+
         ssboDims.gen()
+        ssboDims.bind()
+        ssboDims.bufferData(dims.capacity()*4,dims,DataStoreUsage.DYNAMIC_DRAW)
+        ssboDims.bindBufferBase(0)
     }
 
     private var positionHandle: Int = 0
@@ -316,13 +329,10 @@ class TexMap3(context: Context) {
         dims.put(3,bmpHeight.toFloat())
 
         uboDims.bind()
-        uboDims.bufferData(dims.capacity()*4,dims,DataStoreUsage.DYNAMIC_DRAW)
-        uboDims.bindBufferBase(0)
+        uboDims.bufferSubData(0,dims.capacity()*4,dims)
 
         ssboDims.bind()
-        ssboDims.bufferData(dims.capacity()*4,dims,DataStoreUsage.DYNAMIC_DRAW)
-        ssboDims.bindBufferBase(0)
-
+        ssboDims.bufferSubData(0,dims.capacity()*4,dims)
 
         GLES32.glDrawElements(GLES32.GL_TRIANGLES, 6, GLES32.GL_UNSIGNED_SHORT, 0);
 
@@ -336,6 +346,8 @@ class TexMap3(context: Context) {
         // Draw the triangle
 //        GLES32.glDrawArrays(GLES32.GL_TRIANGLES, 0, vertexCount)
 
+        uboDims.unbind()
+        ssboDims.unbind()
         // Disable vertex array
         //GLES32.glBindTexture(GLES32.GL_TEXTURE_2D, 0);
         tex.unbind()

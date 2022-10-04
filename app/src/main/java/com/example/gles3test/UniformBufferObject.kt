@@ -37,6 +37,10 @@ class UniformBufferObject {
         //return ids[0]
     }
 
+    public fun bufferSubData(offset: Int,size:Int, buffer: Buffer){
+        GLES32.glBufferSubData(GLES32.GL_UNIFORM_BUFFER,offset,size,buffer)
+    }
+
     public fun unbind(){
         GLES32.glBindBuffer(GLES32.GL_UNIFORM_BUFFER,0)
         //return ids[0]

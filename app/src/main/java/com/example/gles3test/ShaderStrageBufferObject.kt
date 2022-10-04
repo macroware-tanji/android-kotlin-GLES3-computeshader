@@ -35,6 +35,11 @@ class ShaderStrageBufferObject {
         GLES32.glBufferData(GLES32.GL_SHADER_STORAGE_BUFFER,size,buffer,usage.v)
         //return ids[0]
     }
+
+    public fun bufferSubData(offset: Int,size:Int, buffer: Buffer){
+        GLES32.glBufferSubData(GLES32.GL_SHADER_STORAGE_BUFFER,offset,size,buffer)
+    }
+
     public fun bindBufferBase(bindingPos: Int){
         GLES32.glBindBufferBase( GLES32.GL_SHADER_STORAGE_BUFFER, bindingPos, ids[0] );
         //return ids[0]

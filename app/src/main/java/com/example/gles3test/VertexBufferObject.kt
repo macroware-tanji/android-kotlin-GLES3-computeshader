@@ -37,6 +37,11 @@ class VertexBufferObject {
         GLES32.glBufferData(GLES32.GL_ARRAY_BUFFER,size,buffer,usage.v)
         //return ids[0]
     }
+
+    public fun bufferSubData(offset: Int,size:Int, buffer: Buffer){
+        GLES32.glBufferSubData(GLES32.GL_ARRAY_BUFFER,offset,size,buffer)
+    }
+
     public fun enable(index: Int){
         locationIndex = index
         GLES32.glEnableVertexAttribArray(index)
