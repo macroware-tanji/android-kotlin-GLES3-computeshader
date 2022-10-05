@@ -4,8 +4,10 @@ package com.example.gles3test
 import android.content.Context
 import android.graphics.BitmapFactory
 import android.opengl.GLES32
-import android.opengl.GLUtils
-import java.nio.*
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import java.nio.FloatBuffer
+import java.nio.ShortBuffer
 
 
 private const val COORDS_PER_VERTEX = 3
@@ -18,7 +20,8 @@ private var rectCoords = floatArrayOf(
 )
 
 private const val UV_COORDS_PER_VERTEX = 2
-private var uvCoords = floatArrayOf(     // in counterclockwise order:
+private var uvCoords = floatArrayOf(
+    // in counterclockwise order:
     1.0f, 0.0f,                // #3: Lower right
     0.0f, 0.0f,               // #2: Lower left
     0.0f, 1.0f,               // #1: Upper left
@@ -134,7 +137,7 @@ class TexMap3(context: Context) {
 
     init {
         this.context = context
-        val vertexShader: Int = loadShaderFromAssets(GLES32.GL_VERTEX_SHADER, "shader.es30-7.vertexshader")
+        val vertexShader: Int = loadShaderFromAssets(GLES32.GL_VERTEX_SHADER, "shader.es30-9.vertexshader")
         val fragmentShader: Int = loadShaderFromAssets(GLES32.GL_FRAGMENT_SHADER, "shader.es30-2.fragmentshader")
 
         // create empty OpenGL ES Program
@@ -186,7 +189,10 @@ class TexMap3(context: Context) {
         vao.unbind()
         ibo.unbind()
 
-        val bmp = BitmapFactory.decodeResource(context.resources, R.drawable.lucky_yotsuba_clover_girl)
+        val options = BitmapFactory.Options()
+        options.inScaled = false //密度によるサイズ変更をキャンセル
+
+        val bmp = BitmapFactory.decodeResource(context.resources, R.drawable.lucky_yotsuba_clover_girl,options)
         var config = bmp.config
 
         bmpWidth = bmp.width
@@ -212,7 +218,7 @@ class TexMap3(context: Context) {
 //        GLES32.glBindBuffer(GLES32.GL_ELEMENT_ARRAY_BUFFER, ibo[0]);
 //        GLES32.glBufferData(GLES32.GL_ELEMENT_ARRAY_BUFFER,indexes.size * 2,indexBuffer,GLES32.GL_STATIC_DRAW)
 //        GLES32.glBindBuffer(GLES32.GL_ELEMENT_ARRAY_BUFFER, 0);
-        
+
         var dims = FloatBuffer.allocate(4)
         dims.put(0,0.0f)
         dims.put(1,0.0f)

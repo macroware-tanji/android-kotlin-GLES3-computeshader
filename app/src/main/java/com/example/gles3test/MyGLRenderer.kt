@@ -3,6 +3,8 @@ package com.example.gles3test
 import android.content.Context
 import android.opengl.GLES32
 import android.opengl.GLSurfaceView
+import android.util.Log
+import android.view.View
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
@@ -60,6 +62,8 @@ class MyGLRenderer (context: Context): GLSurfaceView.Renderer {
     override fun onSurfaceChanged(unused: GL10, width: Int, height: Int) {
         this.width = width
         this.height = height
+        Log.d("MyGLRenderer","surface width:%d height:%d".format(width,height))
+        //Log.d("MyGLRenderer","view width:%d height:%d".format(view.width,view.height))
         GLES32.glViewport(0, 0, width, height)
     }
 }
