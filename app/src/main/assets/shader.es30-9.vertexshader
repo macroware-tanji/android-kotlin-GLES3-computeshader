@@ -38,22 +38,25 @@ void main() {
     pos.x=100.0f;
     pos.y=100.0f;
 
-    if( vPosition.x == 1.0f && vPosition.y == 1.0f){//Upper right
-        v.x = convx(pos.x+texSize.x);
-        v.y = convy(pos.y);
-    }
-    else if( vPosition.x == -1.0f && vPosition.y == 1.0f){//Upper left
-        v.x = convx(pos.x);
-        v.y = convy(pos.y);
-    }
-    else if( vPosition.x == -1.0f && vPosition.y == -1.0f){//Lower left
-        v.x = convx(pos.x);
-        v.y = convy(pos.y+texSize.y);
-    }
-    else if( vPosition.x == 1.0f && vPosition.y == -1.0f){//Lower right
-        v.x = convx(pos.x+texSize.x);
-        v.y = convy(pos.y+texSize.y);
-    }
+    v.x = vPosition.x == 1.0f ? convx(pos.x+texSize.x) : convx(pos.x);
+    v.y = vPosition.y == 1.0f ? convy(pos.y) : convy(pos.y+texSize.y);
+
+//    if( vPosition.x == 1.0f && vPosition.y == 1.0f){//Upper right
+//        v.x = convx(pos.x+texSize.x);
+//        v.y = convy(pos.y);
+//    }
+//    else if( vPosition.x == -1.0f && vPosition.y == 1.0f){//Upper left
+//        v.x = convx(pos.x);
+//        v.y = convy(pos.y);
+//    }
+//    else if( vPosition.x == -1.0f && vPosition.y == -1.0f){//Lower left
+//        v.x = convx(pos.x);
+//        v.y = convy(pos.y+texSize.y);
+//    }
+//    else if( vPosition.x == 1.0f && vPosition.y == -1.0f){//Lower right
+//        v.x = convx(pos.x+texSize.x);
+//        v.y = convy(pos.y+texSize.y);
+//    }
 
     gl_Position = vec4(v, 1.0);
     texCoord = uv;

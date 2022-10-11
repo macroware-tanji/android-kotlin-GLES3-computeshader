@@ -1,0 +1,13 @@
+#version 310 es
+
+precision highp float;
+
+layout(binding = 0) uniform Color {
+    vec4 c;
+} color;
+
+out vec4 FragColor;
+
+void main() {
+  FragColor = color.c;
+}

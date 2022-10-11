@@ -18,6 +18,7 @@ class MyGLRenderer (context: Context): GLSurfaceView.Renderer {
     //private lateinit var mCompShader2: CompShader2
     //private lateinit var mCompShader3: CompShader3
     private lateinit var mCompShader4: CompShader4
+    private lateinit var mLines: Lines
     private var context: Context
     private var width:Int=0
     private var height:Int=0
@@ -35,6 +36,7 @@ class MyGLRenderer (context: Context): GLSurfaceView.Renderer {
         mTextMap = TexMap(context,null)
         mTextMap2 = TexMap2(context)
         mTextMap3 = TexMap3(context)
+        mLines = Lines(context)
 //        mCompShader2=CompShader2(context,"shader.es30-4.computeshader")
 //        mCompShader2.execute()
 
@@ -45,9 +47,12 @@ class MyGLRenderer (context: Context): GLSurfaceView.Renderer {
     }
 
     override fun onDrawFrame(unused: GL10) {
+        GLES32.glBlendFunc(GLES32.GL_SRC_ALPHA, GLES32.GL_ONE_MINUS_SRC_ALPHA);
+        GLES32.glEnable(GLES32.GL_BLEND);
         // Redraw background color
         //GLES32.glClear(GLES32.GL_COLOR_BUFFER_BIT)
-        GLES32.glClearColor(0.3f, 0.5f, 0.8f, 1.0f)
+        //GLES32.glClearColor(0.3f, 0.5f, 0.8f, 1.0f)
+        GLES32.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
         GLES32.glClear(GLES32.GL_COLOR_BUFFER_BIT or GLES32.GL_DEPTH_BUFFER_BIT)
 
         //mTriangle.draw()
@@ -57,6 +62,7 @@ class MyGLRenderer (context: Context): GLSurfaceView.Renderer {
         //mTextMap.draw(mCompShader.texId)
 
         mTextMap3.draw(width.toFloat(),height.toFloat())
+        //mLines.draw()
     }
 
     override fun onSurfaceChanged(unused: GL10, width: Int, height: Int) {

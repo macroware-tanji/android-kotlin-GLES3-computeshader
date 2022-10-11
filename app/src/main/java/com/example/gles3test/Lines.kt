@@ -11,71 +11,31 @@ import java.nio.ShortBuffer
 
 
 private const val COORDS_PER_VERTEX = 3
-private var rectCoords = floatArrayOf(
+private var lineCoords = floatArrayOf(
     // in counterclockwise order:
-    +1.0f, +1.0f, 0.0f,      // #0: Upper right
-    -1.0f, +1.0f, 0.0f,      // #1: Upper left
-    -1.0f, -1.0f, 0.0f,      // #2: Lower left
-    +1.0f, -1.0f, 0.0f,      // #3: Lower right
+    +0.8f, +0.8f, 0.0f,      // #0: Upper right
+    -0.8f, +0.8f, 0.0f,      // #1: Upper left
+    -0.8f, -0.8f, 0.0f,      // #2: Lower left
+    +0.8f, -0.8f, 0.0f,      // #3: Lower right
 )
 
-private const val UV_COORDS_PER_VERTEX = 2
-private var uvCoords = floatArrayOf(
-    // in counterclockwise order:
-    1.0f, 0.0f,                // #3: Lower right
-    0.0f, 0.0f,               // #2: Lower left
-    0.0f, 1.0f,               // #1: Upper left
-    1.0f, 1.0f,               // #0: Upper right
-)
 private var indexes = shortArrayOf(
-    0,1,2,
-    0,2,3
+    0,1,
+    2,3
 )
 
-class TexMap3(context: Context) {
-
-
-//    private val vertexShaderCode =
-//        "attribute vec4 vPosition;" +
-//                "void main() {" +
-//                "  gl_Position = vPosition;" +
-//                "}"
-//
-//    private val fragmentShaderCode =
-//        "precision mediump float;" +
-//                "uniform vec4 vColor;" +
-//                "void main() {" +
-//                "  gl_FragColor = vColor;" +
-//                "}"
-
-
-    // Set color with red, green, blue and alpha (opacity) values
-    //val color = floatArrayOf(0.63671875f, 0.76953125f, 0.22265625f, 1.0f)
+class Lines(context: Context) {
 
     private var vertexBuffer: FloatBuffer =
         // (number of coordinate values * 4 bytes per float)
-        ByteBuffer.allocateDirect(rectCoords.size * 4).run {
+        ByteBuffer.allocateDirect(lineCoords.size * 4).run {
             // use the device hardware's native byte order
             order(ByteOrder.nativeOrder())
 
             // create a floating point buffer from the ByteBuffer
             asFloatBuffer().apply {
                 // add the coordinates to the FloatBuffer
-                put(rectCoords)
-                // set the buffer to read the first coordinate
-                position(0)
-            }
-        }
-    private var uvBuffer: FloatBuffer =
-        // (number of coordinate values * 4 bytes per float)
-        ByteBuffer.allocateDirect(uvCoords.size * 4).run {
-            // use the device hardware's native byte order
-            order(ByteOrder.nativeOrder())
-
-            // create a floating point buffer from the ByteBuffer
-            asFloatBuffer().apply {
-                // add the coordinates to the FloatBuffer
-                put(uvCoords)
+                put(lineCoords)
                 // set the buffer to read the first coordinate
                 position(0)
             }
@@ -124,22 +84,22 @@ class TexMap3(context: Context) {
     private var context:Context;
     //private var tex = IntBuffer.allocate(1)
 
-    private var tex = Tex2D()
+    //private var tex = Tex2D()
     private var ibo = IndexBufferObject()// IntBuffer.allocate(1)
     private var vboVertex = VertexBufferObject()//IntBuffer.allocate(1)
-    private var vboUV = VertexBufferObject()//IntBuffer.allocate(1)
-
+    //private var vboUV = VertexBufferObject()//IntBuffer.allocate(1)
     private var uboDims: UniformBufferObject = UniformBufferObject()
-    private var ssboDims: ShaderStrageBufferObject = ShaderStrageBufferObject()
+//    private var ssboDims: ShaderStrageBufferObject = ShaderStrageBufferObject()
 
-    private var bmpWidth:Int=0
-    private var bmpHeight:Int=0
+
+    //private var bmpWidth:Int=0
+    //private var bmpHeight:Int=0
     private var vao = VertexArrayObject()
 
     init {
         this.context = context
-        val vertexShader: Int = loadShaderFromAssets(GLES32.GL_VERTEX_SHADER, "shader.es30-9.vertexshader")
-        val fragmentShader: Int = loadShaderFromAssets(GLES32.GL_FRAGMENT_SHADER, "shader.es30-2.fragmentshader")
+        val vertexShader: Int = loadShaderFromAssets(GLES32.GL_VERTEX_SHADER, "shader.es30-a.vertexshader")
+        val fragmentShader: Int = loadShaderFromAssets(GLES32.GL_FRAGMENT_SHADER, "shader.es30-a.fragmentshader")
 
         // create empty OpenGL ES Program
         mProgram = GLES32.glCreateProgram().also {
@@ -155,13 +115,13 @@ class TexMap3(context: Context) {
         }
         vboVertex.gen()
         vboVertex.bind()
-        vboVertex.bufferData(rectCoords.size * 4,vertexBuffer,DataStoreUsage.STATIC_DRAW)
+        vboVertex.bufferData(lineCoords.size * 4,vertexBuffer,DataStoreUsage.STATIC_DRAW)
         vboVertex.unbind()
 
-        vboUV.gen()
-        vboUV.bind()
-        vboUV.bufferData(uvCoords.size * 4,uvBuffer,DataStoreUsage.STATIC_DRAW)
-        vboUV.unbind()
+        //vboUV.gen()
+        //vboUV.bind()
+        //vboUV.bufferData(uvCoords.size * 4,uvBuffer,DataStoreUsage.STATIC_DRAW)
+        //vboUV.unbind()
 
         ibo.gen()
         ibo.bind()
@@ -176,31 +136,31 @@ class TexMap3(context: Context) {
         vboVertex.pointer(COORDS_PER_VERTEX,DataType.FLOAT,false,0,0)
         vboVertex.unbind()
 
-        vboUV.bind()
-        vboUV.enable(1)
-        vboUV.pointer(UV_COORDS_PER_VERTEX,DataType.FLOAT,false,0,0)
-        vboUV.unbind()
+        //vboUV.bind()
+        //vboUV.enable(1)
+        //vboUV.pointer(UV_COORDS_PER_VERTEX,DataType.FLOAT,false,0,0)
+        //vboUV.unbind()
 
         ibo.bind()
 
         vao.unbind()
         ibo.unbind()
 
-        val options = BitmapFactory.Options()
-        options.inScaled = false //密度によるサイズ変更をキャンセル
-
-        val bmp = BitmapFactory.decodeResource(context.resources, R.drawable.lucky_yotsuba_clover_girl,options)
-        var config = bmp.config
-
-        bmpWidth = bmp.width
-        bmpHeight= bmp.height
-
-        tex.gen()
-        tex.bind()
-        tex.minFilter(MinFILTER.LINEAR)
-        tex.magFilter(MagFILTER.LINEAR)
-        tex.imgae2D(0,bmp,0)
-        tex.unbind()
+//        val options = BitmapFactory.Options()
+//        options.inScaled = false //密度によるサイズ変更をキャンセル
+//
+//        val bmp = BitmapFactory.decodeResource(context.resources, R.drawable.lucky_yotsuba_clover_girl,options)
+//        var config = bmp.config
+//
+//        bmpWidth = bmp.width
+//        bmpHeight= bmp.height
+//
+//        tex.gen()
+//        tex.bind()
+//        tex.minFilter(MinFILTER.LINEAR)
+//        tex.magFilter(MagFILTER.LINEAR)
+//        tex.imgae2D(0,bmp,0)
+//        tex.unbind()
 
 //        GLES32.glGenTextures(1,tex)
 //        //GLES32.glActiveTexture(GLES32.GL_TEXTURE0);
@@ -216,56 +176,69 @@ class TexMap3(context: Context) {
 //        GLES32.glBufferData(GLES32.GL_ELEMENT_ARRAY_BUFFER,indexes.size * 2,indexBuffer,GLES32.GL_STATIC_DRAW)
 //        GLES32.glBindBuffer(GLES32.GL_ELEMENT_ARRAY_BUFFER, 0);
 
-        var dims = FloatBuffer.allocate(4)
-        dims.put(0,0.0f)
-        dims.put(1,0.0f)
-        dims.put(2,0.0f)
-        dims.put(3,0.0f)
+        var lineWidth = FloatBuffer.allocate(2)
+        GLES32.glGetFloatv(GLES32.GL_ALIASED_LINE_WIDTH_RANGE,lineWidth)
+        var lineWidthMin = lineWidth[0]
+        var lineWidthMax = lineWidth[1]
+
+        var pointSize = FloatBuffer.allocate(2)
+        GLES32.glGetFloatv(GLES32.GL_ALIASED_POINT_SIZE_RANGE,pointSize)
+        var pointSizeMin = pointSize[0]
+        var pointSizeMax = pointSize[1]
+
+        var colorBuffer = FloatBuffer.allocate(4)
+        colorBuffer.put(0,1.0f)
+        colorBuffer.put(1,1.0f)
+        colorBuffer.put(2,1.0f)
+        colorBuffer.put(3,1.0f)
 
         uboDims.gen()
         uboDims.bind()
-        uboDims.bufferData(dims.capacity()*4,dims,DataStoreUsage.DYNAMIC_DRAW)
+        uboDims.bufferData(colorBuffer.capacity()*4,colorBuffer,DataStoreUsage.DYNAMIC_DRAW)
         uboDims.bindBufferBase(0)
-
-        ssboDims.gen()
-        ssboDims.bind()
-        ssboDims.bufferData(dims.capacity()*4,dims,DataStoreUsage.DYNAMIC_DRAW)
-        ssboDims.bindBufferBase(0)
+//
+//        ssboDims.gen()
+//        ssboDims.bind()
+//        ssboDims.bufferData(dims.capacity()*4,dims,DataStoreUsage.DYNAMIC_DRAW)
+//        ssboDims.bindBufferBase(0)
     }
 
     private var positionHandle: Int = 0
     private var mColorHandle: Int = 0
 
-    private val vertexCount: Int = rectCoords.size / COORDS_PER_VERTEX
+    private val vertexCount: Int = lineCoords.size / COORDS_PER_VERTEX
     private val vertexStride: Int = COORDS_PER_VERTEX * 4 // 4 bytes per vertex
-    private val uvStride: Int = UV_COORDS_PER_VERTEX * 4 // 4 bytes per vertex
+    //private val uvStride: Int = UV_COORDS_PER_VERTEX * 4 // 4 bytes per vertex
 
-    fun draw(viewWidth:Float, viewHeight:Float) {
+    fun draw() {
         // Add program to OpenGL ES environment
         GLES32.glUseProgram(mProgram)
+        GLES32.glLineWidth(100.0f)
+        //GLES32.glEnable(GLES32.GL_PO POINT_SMOOTH)
+
         vao.bind()
 
-        tex.active(0)
-        tex.bind()
+        //tex.active(0)
+        //tex.bind()
 
-        var dims = FloatBuffer.allocate(4)
-        dims.put(0,viewWidth)
-        dims.put(1,viewHeight)
-        dims.put(2,bmpWidth.toFloat())
-        dims.put(3,bmpHeight.toFloat())
+        var colorBuffer = FloatBuffer.allocate(4)
+        colorBuffer.put(0,1.0f)
+        colorBuffer.put(1,0.0f)
+        colorBuffer.put(2,0.0f)
+        colorBuffer.put(3,1.0f)
 
         uboDims.bind()
-        uboDims.bufferSubData(0,dims.capacity()*4,dims)
+        uboDims.bufferSubData(0,colorBuffer.capacity()*4,colorBuffer)
 
-        ssboDims.bind()
-        ssboDims.bufferSubData(0,dims.capacity()*4,dims)
+        //ssboDims.bind()
+        //ssboDims.bufferSubData(0,dims.capacity()*4,dims)
 
-        GLES32.glDrawElements(GLES32.GL_TRIANGLES, 6, GLES32.GL_UNSIGNED_SHORT, 0);
+        GLES32.glDrawElements(GLES32.GL_POINTS, 4, GLES32.GL_UNSIGNED_SHORT, 0);
 
-        uboDims.unbind()
-        ssboDims.unbind()
+        //uboDims.unbind()
+        //ssboDims.unbind()
 
-        tex.unbind()
+        //tex.unbind()
         vao.unbind()
     }
 }
