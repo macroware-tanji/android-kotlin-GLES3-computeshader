@@ -14,14 +14,16 @@ class MyGLRenderer (context: Context): GLSurfaceView.Renderer {
     private lateinit var mTextMap: TexMap
     private lateinit var mTextMap2: TexMap2
     private lateinit var mTextMap3: TexMap3
+    private lateinit var mRectangle: Rectangle
     private lateinit var mCompShader: CompShader
     //private lateinit var mCompShader2: CompShader2
     //private lateinit var mCompShader3: CompShader3
     private lateinit var mCompShader4: CompShader4
     private lateinit var mLines: Lines
     private var context: Context
-    private var width:Int=0
-    private var height:Int=0
+    //private var width:Int=0
+    //private var height:Int=0
+    private var viewSize = Vec2(0.0f,0.0f)
 
     init {
         this.context = context
@@ -35,8 +37,9 @@ class MyGLRenderer (context: Context): GLSurfaceView.Renderer {
         mCompShader = CompShader(context,512,512,1, GLES32.GL_RGBA32F,GLES32.GL_RGBA,GLES32.GL_FLOAT,"shader.es30-3.computeshader")
         mTextMap = TexMap(context,null)
         mTextMap2 = TexMap2(context)
-        mTextMap3 = TexMap3(context)
+        mTextMap3 = TexMap3(context,R.drawable.lucky_yotsuba_clover_girl)
         mLines = Lines(context)
+        mRectangle = Rectangle(context)
 //        mCompShader2=CompShader2(context,"shader.es30-4.computeshader")
 //        mCompShader2.execute()
 
@@ -52,7 +55,7 @@ class MyGLRenderer (context: Context): GLSurfaceView.Renderer {
         // Redraw background color
         //GLES32.glClear(GLES32.GL_COLOR_BUFFER_BIT)
         //GLES32.glClearColor(0.3f, 0.5f, 0.8f, 1.0f)
-        GLES32.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
+        GLES32.glClearColor(0.0f, 0.0f, 0.0f, 0.0f)
         GLES32.glClear(GLES32.GL_COLOR_BUFFER_BIT or GLES32.GL_DEPTH_BUFFER_BIT)
 
         //mTriangle.draw()
@@ -61,13 +64,25 @@ class MyGLRenderer (context: Context): GLSurfaceView.Renderer {
         //mCompShader.execute()
         //mTextMap.draw(mCompShader.texId)
 
-        mTextMap3.draw(width.toFloat(),height.toFloat())
+        //val viewSize = Vec2(width.toFloat(),height.toFloat())
+        val texPos = Vec2(100.0f,300.0f)
+        mTextMap3.draw(viewSize,texPos)
+
+        //mRectangle.draw(width.toFloat(),height.toFloat(),width.toFloat(),height.toFloat(),0.0f,0.0f,100.0f)
+
+        //val viewSize = Vec2(width.toFloat(),height.toFloat())
+        val rectSize = Vec2(800.0f,200.0f)
+        val rectPos = Vec2(100.0f,100.0f)
+        val edge = 100.0f
+        val color = Color(0.0f,1.0f,0.0f,1.0f)
+        mRectangle.draw(viewSize,rectSize,rectPos,edge,color)
+
         //mLines.draw()
     }
 
     override fun onSurfaceChanged(unused: GL10, width: Int, height: Int) {
-        this.width = width
-        this.height = height
+        viewSize.x = width.toFloat()
+        viewSize.y = height.toFloat()
         Log.d("MyGLRenderer","surface width:%d height:%d".format(width,height))
         //Log.d("MyGLRenderer","view width:%d height:%d".format(view.width,view.height))
         GLES32.glViewport(0, 0, width, height)
