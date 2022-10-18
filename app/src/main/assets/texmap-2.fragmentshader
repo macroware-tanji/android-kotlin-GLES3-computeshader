@@ -1,0 +1,21 @@
+#version 320 es
+
+precision highp float;
+
+layout(binding = 0) uniform sampler2D texLoc;
+layout(binding = 1) uniform FragInfo {
+    float period;
+    float time;
+} info;
+
+in vec2 texCoord;
+out vec4 FragColor;
+
+const float PI = 3.14159265359;
+
+void main() {
+    vec4 c = texture(texLoc, texCoord);
+    c.a = sin(2.0f * PI * fract(info.time/info.period));
+    FragColor = c;//texture(texLoc, texCoord);
+    //FragColor = vec4(1.0f,0.0f,0.0f,1.0f);//texture(texLoc, texCoord);
+}

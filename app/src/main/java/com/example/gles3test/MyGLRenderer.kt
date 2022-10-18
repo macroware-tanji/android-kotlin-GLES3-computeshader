@@ -14,7 +14,10 @@ class MyGLRenderer (context: Context): GLSurfaceView.Renderer {
     private lateinit var mTextMap: TexMap
     private lateinit var mTextMap2: TexMap2
     private lateinit var mTextMap3: TexMap3
+    private lateinit var mTextMap4: TexMap4
+    private lateinit var mTextMap5: TexMap5
     private lateinit var mRectangle: Rectangle
+    private lateinit var mRadiation: Radiation
     private lateinit var mCompShader: CompShader
     //private lateinit var mCompShader2: CompShader2
     //private lateinit var mCompShader3: CompShader3
@@ -38,8 +41,13 @@ class MyGLRenderer (context: Context): GLSurfaceView.Renderer {
         mTextMap = TexMap(context,null)
         mTextMap2 = TexMap2(context)
         mTextMap3 = TexMap3(context,R.drawable.lucky_yotsuba_clover_girl)
+        mTextMap4 = TexMap4(context,R.drawable.lucky_yotsuba_clover_girl, 4.0f,1.0f)
+        var ids = arrayOf(R.drawable.score_kira1_3x, R.drawable.score_kira2_3x, R.drawable.score_kira3_3x)
+        mTextMap5 = TexMap5(context,ids)
+
         mLines = Lines(context)
         mRectangle = Rectangle(context)
+        mRadiation = Radiation(context)
 //        mCompShader2=CompShader2(context,"shader.es30-4.computeshader")
 //        mCompShader2.execute()
 
@@ -58,6 +66,7 @@ class MyGLRenderer (context: Context): GLSurfaceView.Renderer {
         GLES32.glClearColor(0.0f, 0.0f, 0.0f, 0.0f)
         GLES32.glClear(GLES32.GL_COLOR_BUFFER_BIT or GLES32.GL_DEPTH_BUFFER_BIT)
 
+        mRadiation.draw(viewSize)
         //mTriangle.draw()
         //mTextMap.draw()
 
@@ -65,8 +74,11 @@ class MyGLRenderer (context: Context): GLSurfaceView.Renderer {
         //mTextMap.draw(mCompShader.texId)
 
         //val viewSize = Vec2(width.toFloat(),height.toFloat())
-        val texPos = Vec2(100.0f,300.0f)
-        mTextMap3.draw(viewSize,texPos)
+        val texPos = Vec2(100.0f,400.0f)
+        val texSize = Vec2(800.0f,200.0f)
+        mTextMap5.draw(viewSize,texSize, texPos)
+        val texPos2 = Vec2(viewSize.x/2.0f,viewSize.y/2.0f)
+        mTextMap4.draw(viewSize,texPos2)
 
         //mRectangle.draw(width.toFloat(),height.toFloat(),width.toFloat(),height.toFloat(),0.0f,0.0f,100.0f)
 
