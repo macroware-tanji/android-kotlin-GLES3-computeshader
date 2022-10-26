@@ -134,8 +134,8 @@ class TexMap5(context: Context, drawableIds:Array<Int>) {
     private var uboInfo2: UniformBufferObject = UniformBufferObject()
     //private var ssboDims: ShaderStrageBufferObject = ShaderStrageBufferObject()
 
-    private lateinit var bmpSizes: Array<Vec2>
-    private lateinit var texs: Array<Tex2D>
+    private var bmpSizes: Array<Vec2>
+    private var texs: Array<Tex2D>
 
     //private var bmpWidth:Int=0
     //private var bmpHeight:Int=0

@@ -18,6 +18,7 @@ class MyGLRenderer (context: Context): GLSurfaceView.Renderer {
     private lateinit var mTextMap5: TexMap5
     private lateinit var mRectangle: Rectangle
     private lateinit var mRadiation: Radiation
+    private lateinit var mPentagon: Pentagon
     private lateinit var mCompShader: CompShader
     //private lateinit var mCompShader2: CompShader2
     //private lateinit var mCompShader3: CompShader3
@@ -44,6 +45,7 @@ class MyGLRenderer (context: Context): GLSurfaceView.Renderer {
         mTextMap4 = TexMap4(context,R.drawable.lucky_yotsuba_clover_girl, 4.0f,1.0f)
         var ids = arrayOf(R.drawable.score_kira1_3x, R.drawable.score_kira2_3x, R.drawable.score_kira3_3x)
         mTextMap5 = TexMap5(context,ids)
+        mPentagon = Pentagon(context)
 
         mLines = Lines(context)
         mRectangle = Rectangle(context)
@@ -89,6 +91,10 @@ class MyGLRenderer (context: Context): GLSurfaceView.Renderer {
         val color = Color(0.0f,1.0f,0.0f,1.0f)
         mRectangle.draw(viewSize,rectSize,rectPos,edge,color)
 
+        var scores = arrayOf(1.0f,1.0f,1.0f,1.0f,1.0f)
+        val center = Vec2(viewSize.x/2.0f,viewSize.y/2.0f)
+        val color2 = Color(1.0f,0.0f,0.0f,1.0f)
+        mPentagon.draw(viewSize,center,viewSize.x/2.0f,scores,2.0f,color2)
         //mLines.draw()
     }
 

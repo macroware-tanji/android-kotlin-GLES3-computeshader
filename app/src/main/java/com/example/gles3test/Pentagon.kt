@@ -6,35 +6,40 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
 import java.nio.ShortBuffer
+import java.util.*
 
-
-class Rectangle(context: Context) {
+class Pentagon(context: Context) {
     private val COORDS_PER_VERTEX = 3
-    private var rectCoords = floatArrayOf(
+    private var vertexCoords = floatArrayOf(
         // in counterclockwise order:
-        +1.0f, +1.0f, 0.0f,      // #0: Upper right
-        -1.0f, +1.0f, 0.0f,      // #1: Upper left
-        -1.0f, -1.0f, 0.0f,      // #2: Lower left
-        +1.0f, -1.0f, 0.0f,      // #3: Lower right
+        +0.0f, +0.0f, 0.0f,      // #0: center
+        -0.0f, +0.0f, 1.0f,      // #1: upper center
+        -0.0f, -0.0f, 2.0f,      // #2: upper left
+        +0.0f, -0.0f, 3.0f,      // #3: Lower left
+        +0.0f, -0.0f, 4.0f,      // #3: Lower right
+        +0.0f, -0.0f, 5.0f,      // #3: upper right
     )
 
     private var indexes = shortArrayOf(
         0,1,2,
-        0,2,3
+        0,2,3,
+        0,3,4,
+        0,4,5,
+        0,5,1,
     )
     private var context: Context
     private var mProgram: Int
 
     private var vertexBuffer: FloatBuffer =
         // (number of coordinate values * 4 bytes per float)
-        ByteBuffer.allocateDirect(rectCoords.size * 4).run {
+        ByteBuffer.allocateDirect(vertexCoords.size * 4).run {
             // use the device hardware's native byte order
             order(ByteOrder.nativeOrder())
 
             // create a floating point buffer from the ByteBuffer
             asFloatBuffer().apply {
                 // add the coordinates to the FloatBuffer
-                put(rectCoords)
+                put(vertexCoords)
                 // set the buffer to read the first coordinate
                 position(0)
             }
@@ -71,15 +76,16 @@ class Rectangle(context: Context) {
     private var ibo = IndexBufferObject()// IntBuffer.allocate(1)
     private var vboVertex = VertexBufferObject()//IntBuffer.allocate(1)
     private var vao = VertexArrayObject()
-    private var uboInfo0: UniformBufferObject = UniformBufferObject()
-    private var uboInfo1: UniformBufferObject = UniformBufferObject()
-    private var infoBuffer = FloatBuffer.allocate(11)
-
+    private var uboInfo: UniformBufferObject = UniformBufferObject()
+    private var uboInfo2: UniformBufferObject = UniformBufferObject()
+    private var infoBuffer = FloatBuffer.allocate(12)
+    private var infoBuffer2 = FloatBuffer.allocate(4)
+    private var startTime = Date().time
 
     init {
         this.context = context
-        val vertexShader: Int = loadShaderFromAssets(GLES32.GL_VERTEX_SHADER, "rectangle-0.vertexshader")
-        val fragmentShader: Int = loadShaderFromAssets(GLES32.GL_FRAGMENT_SHADER, "rectangle-0.fragmentshader")
+        val vertexShader: Int = loadShaderFromAssets(GLES32.GL_VERTEX_SHADER, "pentagon-0.vertexshader")
+        val fragmentShader: Int = loadShaderFromAssets(GLES32.GL_FRAGMENT_SHADER, "pentagon-0.fragmentshader")
 
         // create empty OpenGL ES Program
         mProgram = GLES32.glCreateProgram().also {
@@ -95,7 +101,7 @@ class Rectangle(context: Context) {
         }
         vboVertex.gen()
         vboVertex.bind()
-        vboVertex.bufferData(rectCoords.size * 4,vertexBuffer,DataStoreUsage.STATIC_DRAW)
+        vboVertex.bufferData(vertexCoords.size * 4,vertexBuffer,DataStoreUsage.STATIC_DRAW)
         vboVertex.unbind()
 
 //        vboUV.gen()
@@ -134,17 +140,19 @@ class Rectangle(context: Context) {
 //        infoBuffer.put(4,1.0f)
 //        infoBuffer.put(5,1.0f)
 
-        uboInfo0.gen()
-        uboInfo0.bind()
-        uboInfo0.bufferData(infoBuffer.capacity()*4,infoBuffer,DataStoreUsage.DYNAMIC_DRAW)
-        uboInfo0.bindBufferBase(0)
-        uboInfo0.unbind()
+        uboInfo.gen()
+        uboInfo.bind()
+        uboInfo.bufferData(infoBuffer.capacity()*4,infoBuffer,DataStoreUsage.DYNAMIC_DRAW)
+        uboInfo.bindBufferBase(0)
+        uboInfo.unbind()
 
-        uboInfo1.gen()
-        uboInfo1.bind()
-        uboInfo1.bufferData(infoBuffer.capacity()*4,infoBuffer,DataStoreUsage.DYNAMIC_DRAW)
-        uboInfo1.bindBufferBase(1)
-        uboInfo1.unbind()
+        uboInfo2.gen()
+        uboInfo2.bind()
+        uboInfo2.bufferData(infoBuffer2.capacity()*4,infoBuffer2,DataStoreUsage.DYNAMIC_DRAW)
+        uboInfo2.bindBufferBase(1)
+        uboInfo2.unbind()
+
+        startTime = Date().time
     }
     private fun loadShaderFromAssets(type: Int, shaderFileName: String): Int {
 
@@ -158,11 +166,13 @@ class Rectangle(context: Context) {
             GLES32.glCompileShader(shader)
         }
     }
-    fun draw(viewSize:Vec2, rectSize:Vec2, rectPos:Vec2, edge:Float, color:Color ) {
+    fun draw(viewSize:Vec2, center:Vec2, length:Float, score:Array<Float>, period:Float,color:Color) {
         // Add program to OpenGL ES environment
         GLES32.glUseProgram(mProgram)
         //GLES32.glLineWidth(100.0f)
         //GLES32.glEnable(GLES32.GL_PO POINT_SMOOTH)
+
+        var time = (Date().time - startTime)/1000.0f
 
         vao.bind()
 
@@ -173,34 +183,37 @@ class Rectangle(context: Context) {
         infoBuffer.put(0,viewSize.x)//resolution.x
         infoBuffer.put(1,viewSize.y)//resolution.y
 
-        infoBuffer.put(2,rectSize.x)//rectSize.x
-        infoBuffer.put(3,rectSize.y)//rectSize.y
+        infoBuffer.put(2,center.x)//center.x
+        infoBuffer.put(3,center.y)//center.y
 
-        infoBuffer.put(4,rectPos.x)//rectPos.x
-        infoBuffer.put(5,rectPos.y)//rectPos.y
+        infoBuffer.put(4,length)//length
+        infoBuffer.put(5,score[0])//score
+        infoBuffer.put(6,score[1])//score
+        infoBuffer.put(7,score[2])//score
+        infoBuffer.put(8,score[3])//score
+        infoBuffer.put(9,score[4])//score
+        infoBuffer.put(10,time)//time
+        infoBuffer.put(11,period)//period
 
-        infoBuffer.put(6,color.r)//color.r
-        infoBuffer.put(7,color.g)//color.g
-        infoBuffer.put(8,color.b)//color.b
-        infoBuffer.put(9,color.a)//color.a
+        uboInfo.bind()
+        uboInfo.bufferSubData(0,infoBuffer.capacity()*4,infoBuffer)
+        uboInfo.bindBufferBase(0)
 
-        infoBuffer.put(10,edge)//edge
+        infoBuffer2.put(0,color.r)//color.r
+        infoBuffer2.put(1,color.g)//color.g
+        infoBuffer2.put(2,color.b)//color.b
+        infoBuffer2.put(3,color.a)//color.a
 
-        uboInfo0.bind()
-        uboInfo0.bufferSubData(0,infoBuffer.capacity()*4,infoBuffer)
-        uboInfo0.bindBufferBase(0)
-
-        uboInfo1.bind()
-        uboInfo1.bufferSubData(0,infoBuffer.capacity()*4,infoBuffer)
-        uboInfo1.bindBufferBase(1)
+        uboInfo2.bind()
+        uboInfo2.bufferSubData(0,infoBuffer2.capacity()*4,infoBuffer2)
+        uboInfo2.bindBufferBase(1)
 
         //ssboDims.bind()
         //ssboDims.bufferSubData(0,dims.capacity()*4,dims)
 
-        GLES32.glDrawElements(GLES32.GL_TRIANGLES, 6, GLES32.GL_UNSIGNED_SHORT, 0);
+        GLES32.glDrawElements(GLES32.GL_TRIANGLES, indexes.size, GLES32.GL_UNSIGNED_SHORT, 0);
 
-        uboInfo0.unbind()
-        uboInfo1.unbind()
+        uboInfo.unbind()
 
         //uboDims.unbind()
         //ssboDims.unbind()
