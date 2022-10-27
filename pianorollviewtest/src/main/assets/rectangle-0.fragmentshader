@@ -1,0 +1,51 @@
+#version 320 es
+
+precision highp float;
+
+layout(binding = 1) uniform FlagInfo {
+    vec2 resolution;
+    vec2 rectSize;
+    vec2 rectPos;
+    vec4 color;
+    float edge;
+} info;
+
+out vec4 FragColor;
+
+float convx(float x){
+    vec2 viewSize = info.resolution;
+    return x * 2.0f / viewSize.x - 1.0f;
+}
+
+float convy(float y){
+    vec2 viewSize = info.resolution;
+    return -( y * 2.0f / viewSize.y - 1.0f);
+}
+
+//void main() {
+//  FragColor = color.c;
+//}
+float box(vec2 p,vec2 c,vec2 size,float edge){
+	vec2 d=abs(p-c)-size+edge;
+	float l=length(max(d,0.))+min(max(d.x,d.y),0.);
+	return step(l-edge,0.);
+}
+
+void main(){
+    float rate = info.resolution.y/info.resolution.x;
+
+    vec2 center;
+    center.x = convx(info.rectPos.x + info.rectSize.x/2.0f);
+    center.y = convy(info.rectPos.y + info.rectSize.y/2.0f);
+    center.y *= rate;
+
+    vec2 rectSize;
+    rectSize.x = info.rectSize.x/info.resolution.x;
+    rectSize.y = info.rectSize.y/info.resolution.x;
+
+    float edge = info.edge/info.resolution.x;
+
+   	vec2 p=(gl_FragCoord.xy*2.-info.resolution)/info.resolution.x;
+   	FragColor = vec4(info.color.xyz,box(p,center,rectSize,edge) * info.color.a);
+    //FragColor.a=1.0f;
+}
