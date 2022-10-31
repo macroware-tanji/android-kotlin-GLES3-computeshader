@@ -132,7 +132,7 @@ class TexMap0(context: Context, drawableId:Int) {
     private var uboInfo: UniformBufferObject = UniformBufferObject()
     //private var ssboDims: ShaderStrageBufferObject = ShaderStrageBufferObject()
 
-    private var bmpSize = Vec2(0.0f,0.0f)
+    var bmpSize = Vec2(0.0f,0.0f)
     //private var bmpWidth:Int=0
     //private var bmpHeight:Int=0
     private var vao = VertexArrayObject()
