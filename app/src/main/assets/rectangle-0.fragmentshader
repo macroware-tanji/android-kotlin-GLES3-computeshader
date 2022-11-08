@@ -43,7 +43,7 @@ void main(){
     rectSize.x = info.rectSize.x/info.resolution.x;
     rectSize.y = info.rectSize.y/info.resolution.x;
 
-    float edge = info.edge/info.resolution.x;
+    float edge = info.edge/info.resolution.x*2.0f;
 
    	vec2 p=(gl_FragCoord.xy*2.-info.resolution)/info.resolution.x;
    	FragColor = vec4(info.color.xyz,box(p,center,rectSize,edge) * info.color.a);

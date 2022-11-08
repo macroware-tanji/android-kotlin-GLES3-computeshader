@@ -10,6 +10,10 @@ import jp.co.xing.gl.util.*
 import jp.co.xing.pianorollviewtest.R
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
+import kotlin.concurrent.withLock
+import kotlin.math.abs
+import kotlin.math.max
+import kotlin.math.round
 
 class PianoRollViewRenderer(context: Context): GLSurfaceView.Renderer {
 
@@ -20,7 +24,52 @@ class PianoRollViewRenderer(context: Context): GLSurfaceView.Renderer {
         SONG_MISMATCH,
         SONG_MATCH_EXAMPLE2,
         SONG_MISMATCH_EXAMPLE2,
+        DEBUG_F0_EXAMPLE1,
+        DEBUG_F0_EXAMPLE2,
     }
+    private enum class EventType {
+        KOBUSHI,
+        SHAKURI,
+        VOBRATO
+    }
+
+    private data class FOInfo(
+        var notes: Array<Float> = arrayOf(0.0f,0.0f),
+        var levels: Array<Float> = arrayOf(0.0f,0.0f),
+        var time:Float = 0.0f,
+        var fixed: Boolean = false,
+        var enables:Array<Boolean> = arrayOf(false,false),
+    ) {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as FOInfo
+
+            if (!notes.contentEquals(other.notes)) return false
+            if (!levels.contentEquals(other.levels)) return false
+            if (time != other.time) return false
+            if (fixed != other.fixed) return false
+            if (!enables.contentEquals(other.enables)) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = notes.contentHashCode()
+            result = 31 * result + levels.contentHashCode()
+            result = 31 * result + time.hashCode()
+            result = 31 * result + fixed.hashCode()
+            result = 31 * result + enables.contentHashCode()
+            return result
+        }
+    }
+
+    private data class EventInfo(
+        var type:EventType,
+        var time:Float,
+        var note:Int
+    )
 
     private var context: Context
     //private var width:Int=0
@@ -55,6 +104,11 @@ class PianoRollViewRenderer(context: Context): GLSurfaceView.Renderer {
     private val COLOR_SONG_MATCH_EXAMPLE2 = Color(0x41/255.0f, 0x69/255.0f,0xe1/255.0f,1.0f)
     private val COLOR_SONG_MISMATCH_EXAMPLE2 = Color(0xcb/255.0f, 0x31/255.0f,0x02/255.0f,1.0f)
 
+    private val COLOR_DEBUG_F0_EXAMPLE1 = Color(0.0f, 0.4f,0.8f,1.0f)
+    private val COLOR_DEBUG_F0_EXAMPLE2 = Color(1.0f, 0.0f,0.8f,1.0f)
+
+    private  val BLOCK_LENGTH = 310
+
     var graderInfo: KaraokeGrader.GraderInfo = KaraokeGrader.GraderInfo(0,
         arrayOf(0.0,0.0),
         arrayOf<KaraokeGrader.Criteria>(),
@@ -85,12 +139,61 @@ class PianoRollViewRenderer(context: Context): GLSurfaceView.Renderer {
     private var dyScroll:Float = 0.0f
     private lateinit var notes1InSection:Array<KaraokeGrader.Mora>
     private lateinit var notes2InSection:Array<KaraokeGrader.Mora>
+    private var f0Infos:MutableList<FOInfo> = mutableListOf()
+    private var eventQueue:MutableList<EventInfo> = mutableListOf()
 
     var playTime: Float = 0.0f
+
+    private val lock = java.util.concurrent.locks.ReentrantLock()
 
     init {
         this.context = context
     }
+
+    private fun Log2(v: Float): Float {
+        return Math.log(v.toDouble()).toFloat() / Math.log(2.0).toFloat()
+    }
+    private fun repeat(t:Float, length:Float):Float{
+        var v = t % length
+        if(v < 0.0f){
+            v += length
+        }
+        return v;
+    }
+    private fun frequencyToNote(freq: Float, baseFreq:Float = 440.0f, baseNote:Float = 69.0f): Float {
+        return if( freq > 0.0f)  12.0f * Log2(freq / baseFreq) + baseNote else 0.0f;
+    }
+    private fun correctNote(note: Float, standard: Float): Float {
+        return if (note > 0) standard - 6 + repeat(note - (standard - 6), 12.0f) else 0.0f
+    }
+    fun addDetectedPitch(frames:Int, vocalNo:Int, pitch:Array<Float>, dbfs:Array<Float>){
+        lock.withLock {
+            while(f0Infos.count() < frames + pitch.count()){
+                f0Infos.add(FOInfo())
+            }
+            for(i in 0 until pitch.count()){
+                f0Infos[frames+i].notes[vocalNo] = frequencyToNote(freq = pitch[i])
+                f0Infos[frames+i].levels[vocalNo] = dbfs[i]
+                f0Infos[frames+i].time = (frames + i) * 0.01f
+                f0Infos[frames+i].fixed = false
+                f0Infos[frames+i].enables[vocalNo] = true
+            }
+        }
+    }
+    fun addDetectedEvent(time:Float, vocalNo:Int, criteriaNo:Int, type:String){
+        lock.withLock {
+            var note = getEventNote(time)
+            if(note > 0){
+                var e = EventInfo(EventType.valueOf(type.uppercase()),time,note)
+                var f = eventQueue.filter { it.time== e.time && it.type == e.type && it.note == e.note }
+                if(f.isEmpty()){
+                    eventQueue.add(e)
+                    
+                }
+            }
+        }
+    }
+
     private fun getSectionByTime(time:Float): Int {
         for(i in 0 until graderInfo.gradingSections.count()){
             val sec = graderInfo.gradingSections[i]
@@ -131,7 +234,44 @@ class PianoRollViewRenderer(context: Context): GLSurfaceView.Renderer {
 
     }
 
-    fun getNotesInRange(start:Float, end:Float, tehonNo:Int) : Array<KaraokeGrader.Mora> {
+    private fun getEventNote(time:Float): Int {
+        var judgementRange = (BLOCK_LENGTH * 10)/1000.0f
+        var start = max(time,judgementRange) - judgementRange
+        return getNoteInRange(start,time)
+    }
+
+    private fun getNoteInRange(start:Float, end:Float): Int {
+        var f0note:Int = 0
+        var f0s = f0Infos.filter { it.time in start..end }
+        for(f0 in f0s.reversed()){
+            f0note = round(f0.notes[0]).toInt()
+            if(f0note>0){
+                break
+            }
+        }
+        var tehonNote = 0
+        var tehonNotes1 = getTehonNotesInRange(start,end,0)
+        if(!tehonNotes1.isEmpty()){
+            tehonNote = tehonNotes1.last().note
+        }
+        if(tehonNote==0){
+            var tehonNotes2 = getTehonNotesInRange(start,end,1)
+            if(!tehonNotes2.isEmpty()){
+                tehonNote = tehonNotes2.last().note
+            }
+        }
+        if(f0note==0){
+            return tehonNote
+        }
+        if(tehonNote==0){
+            return f0note
+        }
+        if(abs(f0note -tehonNote)>=6){
+            return tehonNote
+        }
+        return f0note
+    }
+    private fun getTehonNotesInRange(start:Float, end:Float, tehonNo:Int) : Array<KaraokeGrader.Mora> {
         if( tehonNo < graderInfo.criteria.size ){
             var notes = graderInfo.criteria[tehonNo].notes.filter {
                 start < it.time + it.duration && it.time < end && it.note >= 2 && it.note <=125 && it.flag!=2
@@ -141,7 +281,7 @@ class PianoRollViewRenderer(context: Context): GLSurfaceView.Renderer {
         return arrayOf()
     }
 
-    fun getCurrentNotes(currentTime:Float,margin:Float,fixed:Boolean): List<KaraokeGrader.Mora> {
+    private fun getCurrentNotes(currentTime:Float, margin:Float, fixed:Boolean): List<KaraokeGrader.Mora> {
         var notes:MutableList<KaraokeGrader.Mora> = mutableListOf()
 
         for(note in notes1InSection){
@@ -216,8 +356,8 @@ class PianoRollViewRenderer(context: Context): GLSurfaceView.Renderer {
                 sectionSpeed = sectionWidth / (section.tail - section.head).toFloat()
                 prevSectionNumber = currSectionNumber
 
-                notes1InSection = getNotesInRange(section.head.toFloat(),section.tail.toFloat(),0)
-                notes2InSection = getNotesInRange(section.head.toFloat(),section.tail.toFloat(),1)
+                notes1InSection = getTehonNotesInRange(section.head.toFloat(),section.tail.toFloat(),0)
+                notes2InSection = getTehonNotesInRange(section.head.toFloat(),section.tail.toFloat(),1)
             }
             var notes = getCurrentNotes(playTime,0.0f,false)
             var scrollEndTime = scrollStartTime + SCROLL_TIME
@@ -254,6 +394,21 @@ class PianoRollViewRenderer(context: Context): GLSurfaceView.Renderer {
             }
             drawSectionLines()
             drawOutOfSections()
+
+            lock.withLock{
+                val startIndex = (section.head*100).toInt()
+                if(startIndex < f0Infos.count()){
+                    val endIndex = arrayOf( (section.tail*100).toInt() + 1,f0Infos.count()-1).min()
+                    var types = arrayOf(NoteType.DEBUG_F0_EXAMPLE1,NoteType.DEBUG_F0_EXAMPLE2)
+                    for(i in startIndex .. endIndex){
+                        var f0 = f0Infos[i]
+                        for(j in 0 until graderInfo.vocalCount ){
+                            drawNote(i*0.01f,0.01f,f0.notes[j].toInt(),types[j],false,0.0f)
+                        }
+                    }
+                }
+            }
+
 
             drawProgressBar()
         }
@@ -308,6 +463,8 @@ class PianoRollViewRenderer(context: Context): GLSurfaceView.Renderer {
             NoteType.SONG_MISMATCH -> COLOR_SONG_MISMATCH
             NoteType.SONG_MATCH_EXAMPLE2 -> COLOR_SONG_MATCH_EXAMPLE2
             NoteType.SONG_MISMATCH_EXAMPLE2 -> COLOR_SONG_MISMATCH_EXAMPLE2
+            NoteType.DEBUG_F0_EXAMPLE1 -> COLOR_DEBUG_F0_EXAMPLE1
+            NoteType.DEBUG_F0_EXAMPLE2 -> COLOR_DEBUG_F0_EXAMPLE2
             else -> Color(1.0f,1.0f,1.0f,1.0f)
         }
 
@@ -318,6 +475,8 @@ class PianoRollViewRenderer(context: Context): GLSurfaceView.Renderer {
         var height = noteHeight + HORIZONTAL_LINE_HEIGHT
         var progress  =  if(progressed && start + duration > section.head) (playTime - baseTime)/duration else 1.0f
 
-        rectangle.draw(viewSize,Vec2(width,height),Vec2(x,y),16.0f,color)
+        var edge = noteHeight/2.0f
+
+        rectangle.draw(viewSize,Vec2(width,height),Vec2(x,y),edge,color)
     }
 }

@@ -22,6 +22,13 @@ data class Sections(
     var sections: List<KaraokeGrader.GradingSection>
 )
 
+data class DetectedPitchItem(var frames:Int, var vocalNo:Int, var pitch:List<Float>, var dbfs:List<Float>)
+data class DetectedPitch(var detected:List<DetectedPitchItem>)
+
+data class DetectedEventItem(var time:Float, var vocalNo:Int, var criteriaNo:Int, var type:String)
+data class DetectedEvent(var detectedEvent:List<DetectedEventItem>)
+
+
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
 
@@ -29,7 +36,6 @@ class MainActivity : AppCompatActivity() {
     lateinit var pianoRollViewRenderer:PianoRollViewRenderer
     lateinit var graderInfo:KaraokeGrader.GraderInfo
 
-    val handler = Handler(Looper.getMainLooper())
     var startTime:Long = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -60,17 +66,49 @@ class MainActivity : AppCompatActivity() {
 
         graderInfo = KaraokeGrader.GraderInfo(1, arrayOf(0.0,0.0),criteriaArray,gradingSectionArray)
 
+
+        val jsonDetectedPitch = this.getAssets().open("detectedPitch.json").reader(charset=Charsets.UTF_8).use{it.readText()}
+        val jsonDetectedPitchRoot = Gson().fromJson(jsonDetectedPitch, DetectedPitch::class.java)
+
+        val jsonDetectedEvent = this.getAssets().open("detectedEvent.json").reader(charset=Charsets.UTF_8).use{it.readText()}
+        val jsonDetectedEventRoot = Gson().fromJson(jsonDetectedEvent, DetectedEvent::class.java)
+
         initPianoRollView()
 
         startTime = System.currentTimeMillis()
 
         var thread = Thread(object:Runnable{
             override fun run() {
+                var startIndex = 0
+                var eventStartIndex = 0
                 while (true){
 
                     val current = System.currentTimeMillis()
                     val elapsedTime = current - startTime
                     pianoRollViewRenderer.playTime = elapsedTime.toFloat()/1000.0f
+                    for(i in startIndex until jsonDetectedPitchRoot.detected.count()){
+                        var detectedPitch = jsonDetectedPitchRoot.detected[i]
+                        if((detectedPitch.frames + detectedPitch.pitch.count()) * 0.01f + 0.01f < pianoRollViewRenderer.playTime){
+                            pianoRollViewRenderer.addDetectedPitch(
+                                detectedPitch.frames,
+                                detectedPitch.vocalNo,
+                                detectedPitch.pitch.toTypedArray(),
+                                detectedPitch.dbfs.toTypedArray())
+                            startIndex = i + 1
+                        }
+                        else{
+                            break;
+                        }
+                    }
+                    if( elapsedTime > 0.31 ){
+                        for(i in eventStartIndex until jsonDetectedEventRoot.detectedEvent.count()){
+                            var detectedEvent = jsonDetectedEventRoot.detectedEvent[i]
+                            if(detectedEvent.time < elapsedTime - 0.31 - 0.2){
+                                pianoRollViewRenderer.addDetectedEvent(detectedEvent.time,detectedEvent.vocalNo,detectedEvent.vocalNo,detectedEvent.type)
+                            }
+                        }
+                    }
+
                     Thread.sleep(20)
                 }
             }

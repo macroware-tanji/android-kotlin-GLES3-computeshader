@@ -86,7 +86,7 @@ class MyGLRenderer (context: Context): GLSurfaceView.Renderer {
 
         //val viewSize = Vec2(width.toFloat(),height.toFloat())
         val rectSize = Vec2(800.0f,200.0f)
-        val rectPos = Vec2(100.0f,100.0f)
+        val rectPos = Vec2(100.0f,viewSize.y/4.0f - 100.0f)
         val edge = 100.0f
         val color = Color(0.0f,1.0f,0.0f,1.0f)
         mRectangle.draw(viewSize,rectSize,rectPos,edge,color)
