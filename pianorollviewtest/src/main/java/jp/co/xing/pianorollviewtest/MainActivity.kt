@@ -103,8 +103,12 @@ class MainActivity : AppCompatActivity() {
                     if( elapsedTime > 0.31 ){
                         for(i in eventStartIndex until jsonDetectedEventRoot.detectedEvent.count()){
                             var detectedEvent = jsonDetectedEventRoot.detectedEvent[i]
-                            if(detectedEvent.time < elapsedTime - 0.31 - 0.2){
+                            if(detectedEvent.time < elapsedTime.toFloat()/1000.0f - 0.31f - 0.2f){
                                 pianoRollViewRenderer.addDetectedEvent(detectedEvent.time,detectedEvent.vocalNo,detectedEvent.vocalNo,detectedEvent.type)
+                                eventStartIndex = i + 1
+                            }
+                            else{
+                                break;
                             }
                         }
                     }

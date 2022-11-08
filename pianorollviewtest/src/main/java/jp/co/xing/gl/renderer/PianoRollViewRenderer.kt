@@ -8,14 +8,15 @@ import androidx.core.math.MathUtils
 import jp.co.brother.rex.KaraokeGrader
 import jp.co.xing.gl.util.*
 import jp.co.xing.pianorollviewtest.R
+//import java.lang.Math.pow
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 import kotlin.concurrent.withLock
-import kotlin.math.abs
-import kotlin.math.max
-import kotlin.math.round
+import kotlin.math.*
 
 class PianoRollViewRenderer(context: Context): GLSurfaceView.Renderer {
+
+    private val TAG = "PianoRollViewRenderer"
 
     private enum class NoteType{
         EXAMPLE1_NOTE,
@@ -30,7 +31,7 @@ class PianoRollViewRenderer(context: Context): GLSurfaceView.Renderer {
     private enum class EventType {
         KOBUSHI,
         SHAKURI,
-        VOBRATO
+        VIBRATO
     }
 
     private data class FOInfo(
@@ -86,6 +87,8 @@ class PianoRollViewRenderer(context: Context): GLSurfaceView.Renderer {
     private var prevSectionNumber:Int = -1
     private lateinit var section:KaraokeGrader.GradingSection
     private var sectionSpeed:Float = 0.0f
+    private var judgmentTime:Float = 0.0f
+    private var dxProgressBar:Float =0.0f
 
     private val SECTION_MARGIN = 20.0f
     private val VERTICAL_LINE_WIDTH = 3.0f
@@ -93,8 +96,13 @@ class PianoRollViewRenderer(context: Context): GLSurfaceView.Renderer {
 
     private lateinit var texMapBK:TexMap0
     private lateinit var texMapSectionLine:TexMap0
+    private lateinit var texMapVibrato:TexMap0
+    private lateinit var texMapShakuri:TexMap0
+    private lateinit var texMapKobushi:TexMap0
     private lateinit var texProgressBar:TexMap0
     private lateinit var rectangle:Rectangle
+    private var texMapNoteIndicator = mutableListOf<TexMap0>()
+
 
     private val COLOR_OUT_OF_SECTION = Color(0.0f,0.0f,0.0f,0.4f)
     private val COLOR_EXAMPLE1_NOTE = Color(0x94/255.0f, 0x97/255.0f,0x9a/255.0f,1.0f)
@@ -120,13 +128,14 @@ class PianoRollViewRenderer(context: Context): GLSurfaceView.Renderer {
 
     private var elapsedTime_:Float = 0.0f
         get() {
-            var currentTimeMillis = System.currentTimeMillis()/1000.0f
-            if(elapsedStartTime < 0.0f){
+            var currentTimeMillis = System.currentTimeMillis()
+
+            if(elapsedStartTime < 0){
                 elapsedStartTime = currentTimeMillis
             }
-            return currentTimeMillis - elapsedStartTime
+            return (currentTimeMillis - elapsedStartTime)/1000.0f
         }
-    private var elapsedStartTime:Float = -1.0f
+    private var elapsedStartTime:Long = -1
     private var elapsedTime:Float = 0.0f
 
     private var introEndTime:Float = 0.0f
@@ -141,6 +150,8 @@ class PianoRollViewRenderer(context: Context): GLSurfaceView.Renderer {
     private lateinit var notes2InSection:Array<KaraokeGrader.Mora>
     private var f0Infos:MutableList<FOInfo> = mutableListOf()
     private var eventQueue:MutableList<EventInfo> = mutableListOf()
+    private var eventAnimationQueue:MutableMap<EventInfo,Float> = mutableMapOf()
+    private var currentNotes:List<KaraokeGrader.Mora> = listOf()
 
     var playTime: Float = 0.0f
 
@@ -188,7 +199,7 @@ class PianoRollViewRenderer(context: Context): GLSurfaceView.Renderer {
                 var f = eventQueue.filter { it.time== e.time && it.type == e.type && it.note == e.note }
                 if(f.isEmpty()){
                     eventQueue.add(e)
-                    
+                    Log.d(TAG,e.toString())
                 }
             }
         }
@@ -310,6 +321,22 @@ class PianoRollViewRenderer(context: Context): GLSurfaceView.Renderer {
         texMapSectionLine = TexMap0(context, R.drawable.sectionbar_3x)
         texProgressBar = TexMap0(context, R.drawable.pianorole_cover_3x)
         rectangle = Rectangle(context)
+
+        texMapVibrato= TexMap0(context, R.drawable.img_vibrato_s_3x)
+        texMapKobushi= TexMap0(context, R.drawable.img_kobushi_s_3x)
+        texMapShakuri= TexMap0(context, R.drawable.img_shakuri_s_3x)
+
+        var imgIndicatorIds = arrayOf(
+            R.drawable.marker00_3x,
+            R.drawable.marker01_3x,
+            R.drawable.marker02_3x,
+            R.drawable.marker03_3x,
+            R.drawable.marker04_3x)
+
+        for(i in imgIndicatorIds){
+            var t = TexMap0(context,i)
+            texMapNoteIndicator.add(t)
+        }
     }
 
     override fun onSurfaceChanged(p0: GL10?, width: Int, height: Int) {
@@ -339,82 +366,77 @@ class PianoRollViewRenderer(context: Context): GLSurfaceView.Renderer {
 
     override fun onDrawFrame(p0: GL10?) {
         elapsedTime = elapsedTime_
-        GLES32.glBlendFunc(GLES32.GL_SRC_ALPHA, GLES32.GL_ONE_MINUS_SRC_ALPHA)
-        GLES32.glEnable(GLES32.GL_BLEND)
+        lock.withLock{
+            GLES32.glBlendFunc(GLES32.GL_SRC_ALPHA, GLES32.GL_ONE_MINUS_SRC_ALPHA)
+            GLES32.glEnable(GLES32.GL_BLEND)
 
-        GLES32.glClearColor(0.0f, 0.0f, 0.0f, 0.0f)
-        GLES32.glClear(GLES32.GL_COLOR_BUFFER_BIT or GLES32.GL_DEPTH_BUFFER_BIT)
-        //GLES32.glClear(GLES32.GL_COLOR_BUFFER_BIT or GLES32.GL_DEPTH_BUFFER_BIT)
+            GLES32.glClearColor(0.0f, 0.0f, 0.0f, 0.0f)
+            GLES32.glClear(GLES32.GL_COLOR_BUFFER_BIT or GLES32.GL_DEPTH_BUFFER_BIT)
+            //GLES32.glClear(GLES32.GL_COLOR_BUFFER_BIT or GLES32.GL_DEPTH_BUFFER_BIT)
 
-        currSectionNumber = getSectionByTime(playTime)
+            currSectionNumber = getSectionByTime(playTime)
 
-        drawBackground()
+            drawBackground()
 
-        if( currSectionNumber >= 0 ){
-            if(currSectionNumber != prevSectionNumber){
-                section = graderInfo.gradingSections[currSectionNumber]
-                sectionSpeed = sectionWidth / (section.tail - section.head).toFloat()
-                prevSectionNumber = currSectionNumber
+            if( currSectionNumber >= 0 ){
+                if(currSectionNumber != prevSectionNumber){
+                    section = graderInfo.gradingSections[currSectionNumber]
+                    sectionSpeed = sectionWidth / (section.tail - section.head).toFloat()
+                    prevSectionNumber = currSectionNumber
 
-                notes1InSection = getTehonNotesInRange(section.head.toFloat(),section.tail.toFloat(),0)
-                notes2InSection = getTehonNotesInRange(section.head.toFloat(),section.tail.toFloat(),1)
-            }
-            var notes = getCurrentNotes(playTime,0.0f,false)
-            var scrollEndTime = scrollStartTime + SCROLL_TIME
-            var isScrolling = elapsedTime < scrollEndTime
-            if(isScrolling && elapsedTime > introEndTime){
-                adjustScrollValue = Math.round(adjustStartPosition + dyScroll  * smoothstep(scrollStartTime,scrollEndTime,elapsedTime)).toFloat()
-            }
-            else{
-                var diff = 0
-                for(note in notes){
-                    var sub = note.note - centerNote
-                    if( sub > 9 ){
-                        diff = sub - 9
-                    }
-                    else if(sub < -9){
-                        diff = sub + 9
-                    }
+                    notes1InSection = getTehonNotesInRange(section.head.toFloat(),section.tail.toFloat(),0)
+                    notes2InSection = getTehonNotesInRange(section.head.toFloat(),section.tail.toFloat(),1)
                 }
-                if(diff !=0 ){
-                    centerNote += diff
-                    dyScroll = diff.toFloat() * (noteHeight+HORIZONTAL_LINE_HEIGHT)/2.0f
-                    adjustStartPosition = adjustScrollValue
-                    scrollStartTime = elapsedTime
+                currentNotes = getCurrentNotes(playTime,0.0f,false)
+                var scrollEndTime = scrollStartTime + SCROLL_TIME
+                var isScrolling = elapsedTime < scrollEndTime
+                if(isScrolling && elapsedTime > introEndTime){
+                    adjustScrollValue = Math.round(adjustStartPosition + dyScroll  * smoothstep(scrollStartTime,scrollEndTime,elapsedTime)).toFloat()
                 }
                 else{
-                    adjustScrollValue = (centerNote-13).toFloat() * (noteHeight+HORIZONTAL_LINE_HEIGHT)/2.0f
-                }
-            }
-            for(note in notes1InSection ){
-                drawNote(note.time.toFloat(), note.duration.toFloat(),note.note,NoteType.EXAMPLE1_NOTE,false, 0.0f)
-            }
-            for(note in notes2InSection ){
-                drawNote(note.time.toFloat(), note.duration.toFloat(),note.note,NoteType.EXAMPLE2_NOTE,false, 0.0f)
-            }
-            drawSectionLines()
-            drawOutOfSections()
-
-            lock.withLock{
-                val startIndex = (section.head*100).toInt()
-                if(startIndex < f0Infos.count()){
-                    val endIndex = arrayOf( (section.tail*100).toInt() + 1,f0Infos.count()-1).min()
-                    var types = arrayOf(NoteType.DEBUG_F0_EXAMPLE1,NoteType.DEBUG_F0_EXAMPLE2)
-                    for(i in startIndex .. endIndex){
-                        var f0 = f0Infos[i]
-                        for(j in 0 until graderInfo.vocalCount ){
-                            drawNote(i*0.01f,0.01f,f0.notes[j].toInt(),types[j],false,0.0f)
+                    var diff = 0
+                    for(note in currentNotes){
+                        var sub = note.note - centerNote
+                        if( sub > 9 ){
+                            diff = sub - 9
+                        }
+                        else if(sub < -9){
+                            diff = sub + 9
                         }
                     }
+                    if(diff !=0 ){
+                        centerNote += diff
+                        dyScroll = diff.toFloat() * (noteHeight+HORIZONTAL_LINE_HEIGHT)/2.0f
+                        adjustStartPosition = adjustScrollValue
+                        scrollStartTime = elapsedTime
+                    }
+                    else{
+                        adjustScrollValue = (centerNote-13).toFloat() * (noteHeight+HORIZONTAL_LINE_HEIGHT)/2.0f
+                    }
                 }
+                for(note in notes1InSection ){
+                    drawNote(note.time.toFloat(), note.duration.toFloat(),note.note,NoteType.EXAMPLE1_NOTE,false, 0.0f)
+                }
+                for(note in notes2InSection ){
+                    drawNote(note.time.toFloat(), note.duration.toFloat(),note.note,NoteType.EXAMPLE2_NOTE,false, 0.0f)
+                }
+
+                if(f0Infos.count() >= BLOCK_LENGTH){
+                    judgmentTime = max((min(playTime,f0Infos.last().time)*100)/100.0f,BLOCK_LENGTH/100.0f) - BLOCK_LENGTH/100.0f
+                }
+
+                drawSectionLines()
+                drawOutOfSections()
+
+                drawF0()
+                drawEvent()
+                drawProgressBar()
+                drawNoteIndicator()
             }
-
-
-            drawProgressBar()
-        }
-        else{
-            drawSectionLines()
-            drawOutOfSections()
+            else{
+                drawSectionLines()
+                drawOutOfSections()
+            }
         }
     }
     private fun drawBackground(){
@@ -446,12 +468,27 @@ class PianoRollViewRenderer(context: Context): GLSurfaceView.Renderer {
             var size = Vec2(bmpSize.x * height/bmpSize.y,height)
 
 
-            var x = offset.x + (playTime - section.head) * sectionSpeed
+            var x = offset.x + (playTime - section.head.toFloat()) * sectionSpeed
+            dxProgressBar = x;
 
             var pos = Vec2(x.toFloat() - size.x,offset.y+HORIZONTAL_LINE_HEIGHT)
             texProgressBar.draw(viewSize,size,pos)
         }
     }
+    private fun drawNoteIndicator(){
+        val indexes = arrayOf(0,1,2,3,4,3,2,1)
+        for(currentNote in currentNotes){
+            var waitTime = 80
+            var noteIndicatorIndex = indexes[((elapsedTime * 1000).toInt() % (indexes.count() * waitTime))/waitTime]
+            var dy = offset.y + pianoRollSize.y - (currentNote.note * (noteHeight+HORIZONTAL_LINE_HEIGHT)/2.0f - adjustScrollValue)
+
+            var texPos = Vec2(
+                dxProgressBar - texMapNoteIndicator[noteIndicatorIndex].bmpSize.x/2.0f,
+                dy - (texMapNoteIndicator[noteIndicatorIndex].bmpSize.y - noteHeight)/2.0f)
+            texMapNoteIndicator[noteIndicatorIndex].draw(viewSize,texPos)
+        }
+    }
+
     private fun drawNote(start:Float,duration:Float, note:Int, type:NoteType, progressed:Boolean, baseTime:Float){
         if(start + duration < section.head || section.tail < start){
             return
@@ -478,5 +515,115 @@ class PianoRollViewRenderer(context: Context): GLSurfaceView.Renderer {
         var edge = noteHeight/2.0f
 
         rectangle.draw(viewSize,Vec2(width,height),Vec2(x,y),edge,color)
+    }
+    private fun drawF0(){
+        val startIndex = (section.head*100).toInt()
+        if(startIndex < f0Infos.count()){
+            val endIndex = arrayOf( (section.tail*100).toInt() + 1,f0Infos.count()-1).min()
+            var types = arrayOf(NoteType.DEBUG_F0_EXAMPLE1,NoteType.DEBUG_F0_EXAMPLE2)
+            for(i in startIndex .. endIndex){
+                var f0 = f0Infos[i]
+                for(j in 0 until graderInfo.vocalCount ){
+                    drawNote(i*0.01f,0.01f,f0.notes[j].toInt(),types[j],false,0.0f)
+                }
+            }
+        }
+    }
+    private fun drawEvent(){
+        val secPreFrame = 1001.0f/30000.0f
+        val coeff = (noteHeight+HORIZONTAL_LINE_HEIGHT) * 8.0f / (secPreFrame*8.0f).pow(2.0f)
+        val interceptX = -secPreFrame * 8.0f
+        val periods = arrayOf<Float>(0.0f,12.0f,16.0f,20.0f,24.0f)
+        val animStartOffsetY = -(abs(coeff) * (secPreFrame * 4.0f).pow(2.0f))
+
+        eventQueue = eventQueue.filter { it.time > section.head && currSectionNumber >= 0 } as MutableList<EventInfo>
+        eventAnimationQueue = eventAnimationQueue.filter { it.key.time > section.head && currSectionNumber>=0 } as MutableMap<EventInfo, Float>
+
+        for(e in eventQueue){
+            if(e.time >= judgmentTime){
+                continue
+            }
+            if(e.time < section.head){
+                continue
+            }
+            var dy = 0.0f
+            var texHeight = 0.0f
+            var texWidth = 0.0f
+            var texMap:TexMap0
+            when(e.type){
+                EventType.VIBRATO->{
+                    texHeight = texMapVibrato.bmpSize.y
+                    texWidth = texMapVibrato.bmpSize.x
+                    dy = offset.y + pianoRollSize.y - (e.note.toFloat() * (noteHeight + HORIZONTAL_LINE_HEIGHT)/2.0f - adjustScrollValue) - texHeight/2.0f
+                    texMap = texMapVibrato
+                }
+                EventType.KOBUSHI->{
+                    texHeight = texMapKobushi.bmpSize.y
+                    texWidth = texMapKobushi.bmpSize.x
+                    dy = offset.y + pianoRollSize.y - (e.note.toFloat() * (noteHeight + HORIZONTAL_LINE_HEIGHT)/2.0f - adjustScrollValue) - texHeight/2.0f
+                    texMap = texMapKobushi
+                }
+                EventType.SHAKURI->{
+                    texHeight = texMapShakuri.bmpSize.y
+                    texWidth = texMapShakuri.bmpSize.x
+                    dy = offset.y + pianoRollSize.y - (e.note.toFloat() * (noteHeight + HORIZONTAL_LINE_HEIGHT)/2.0f - adjustScrollValue) - texHeight/2.0f
+                    texMap = texMapShakuri
+                }
+                else -> {
+                    continue
+                }
+            }
+            var animationElapsedTime = 0.0f
+            var animationStartTime = eventAnimationQueue[e]
+            if(animationStartTime != null){
+                animationElapsedTime = playTime - animationStartTime
+            }
+            else{
+                eventAnimationQueue[e] = playTime
+                animationElapsedTime = 0.0f
+            }
+            if(animationElapsedTime<0.0f){
+                continue
+            }
+            var expansionRate = 1.0f
+            var animationOffsetY = 0.0f
+            if(periods[0] * secPreFrame <= animationElapsedTime && animationElapsedTime < periods[1] * secPreFrame){
+                var st = periods[0] * secPreFrame
+                var ed = periods[1] * secPreFrame
+                expansionRate=2.0f
+                animationOffsetY = animStartOffsetY + coeff * (animationElapsedTime-st + interceptX).pow(2.0f)
+            }
+            else if(periods[1] * secPreFrame <= animationElapsedTime && animationElapsedTime < periods[2] * secPreFrame){
+                var st = periods[1] * secPreFrame
+                var ed = periods[2] * secPreFrame
+                var stExpansionRate = 2.0f
+                var edExpansionRate = 0.8f
+
+                expansionRate = stExpansionRate + (edExpansionRate - stExpansionRate) * sin(PI.toFloat()/2.0f * (animationElapsedTime-st)/(ed-st))
+            }
+            else if(periods[2] * secPreFrame <= animationElapsedTime && animationElapsedTime < periods[3] * secPreFrame){
+                var st = periods[2] * secPreFrame
+                var ed = periods[3] * secPreFrame
+                var stExpansionRate = 0.8f
+                var edExpansionRate = 1.5f
+
+                expansionRate = stExpansionRate + (edExpansionRate - stExpansionRate) * sin(PI.toFloat()/2.0f * (animationElapsedTime-st)/(ed-st))
+            }
+            else if(periods[3] * secPreFrame <= animationElapsedTime && animationElapsedTime < periods[4] * secPreFrame){
+                var st = periods[3] * secPreFrame
+                var ed = periods[4] * secPreFrame
+                var stExpansionRate = 1.5f
+                var edExpansionRate = 1.0f
+                expansionRate = stExpansionRate + (edExpansionRate - stExpansionRate) * sin(PI.toFloat()/2.0f * (animationElapsedTime-st)/(ed-st))
+            }
+            else{
+                expansionRate = 1.0f
+            }
+            var dx = offset.x + (e.time - section.head.toFloat()) * sectionSpeed
+            var texSize = Vec2(texWidth*expansionRate,texHeight*expansionRate)
+            var texPos = Vec2(dx - texSize.x/2.0f, dy + animationOffsetY - (texSize.y-noteHeight)/2.0f)
+            texMap.draw(viewSize,texSize,texPos)
+        }
+
     }
 }

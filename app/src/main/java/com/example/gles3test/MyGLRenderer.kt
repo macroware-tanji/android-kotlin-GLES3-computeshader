@@ -41,7 +41,7 @@ class MyGLRenderer (context: Context): GLSurfaceView.Renderer {
         mCompShader = CompShader(context,512,512,1, GLES32.GL_RGBA32F,GLES32.GL_RGBA,GLES32.GL_FLOAT,"shader.es30-3.computeshader")
         mTextMap = TexMap(context,null)
         mTextMap2 = TexMap2(context)
-        mTextMap3 = TexMap3(context,R.drawable.lucky_yotsuba_clover_girl)
+        mTextMap3 = TexMap3(context,R.drawable.img_vibrato_s_3x)
         mTextMap4 = TexMap4(context,R.drawable.lucky_yotsuba_clover_girl, 4.0f,1.0f)
         var ids = arrayOf(R.drawable.score_kira1_3x, R.drawable.score_kira2_3x, R.drawable.score_kira3_3x)
         mTextMap5 = TexMap5(context,ids)
@@ -79,8 +79,9 @@ class MyGLRenderer (context: Context): GLSurfaceView.Renderer {
         val texPos = Vec2(100.0f,400.0f)
         val texSize = Vec2(800.0f,200.0f)
         mTextMap5.draw(viewSize,texSize, texPos)
-        val texPos2 = Vec2(viewSize.x/2.0f,viewSize.y/2.0f)
-        mTextMap4.draw(viewSize,texPos2)
+        val texPos2 = Vec2(10.0f,10.0f)
+        //mTextMap4.draw(viewSize,texPos2)
+        mTextMap3.draw(viewSize,texPos2)
 
         //mRectangle.draw(width.toFloat(),height.toFloat(),width.toFloat(),height.toFloat(),0.0f,0.0f,100.0f)
 
