@@ -1,0 +1,34 @@
+#version 320 es
+
+precision highp float;
+
+layout(binding = 0) uniform sampler2D texLoc;
+layout(binding = 1) uniform FragInfo {
+    float start;
+    float duration;
+    float time;
+    float fadeTime;
+} info;
+
+in vec2 texCoord;
+out vec4 FragColor;
+
+void main() {
+    float expRate = 1.0f;
+    if(info.start <= info.time && info.time <= info.start + info.duration){
+        if( info.start + info.duration - info.time <= info.fadeTime ){
+            expRate = smoothstep(0.0f,1.0f,(info.start + info.duration - info.time)/info.fadeTime);
+        }
+        else{
+            expRate=1.0f;
+        }
+    }
+    else{
+        expRate = 0.0f;
+    }
+    //expRate=1.0f;
+
+    FragColor = texture(texLoc, texCoord);
+    FragColor.a *= expRate;
+    //FragColor = vec4(1.0f,0.0f,0.0f,1.0f);//texture(texLoc, texCoord);
+}

@@ -72,6 +72,36 @@ class PianoRollViewRenderer(context: Context): GLSurfaceView.Renderer {
         var note:Int
     )
 
+    public data class BlockInfo(
+        var tehonNumber:Int,
+        var noteInfo:KaraokeGrader.Mora,
+        var attached:Boolean=false,
+        var matched:Int=0,
+        var fixedTime:Float)
+
+    private data class PreSongLineBlock(
+        var time:Float,
+        var f0:Float,
+        var note:Int,
+        var tehonNumber:Int,
+        var judged:Boolean)
+
+    private data class SongMatchEffectParam(
+        var time:Float,
+        var len:Float,
+        var note:Float,
+        var effectStart:Float)
+
+    private data class SongMatchEffect(
+        var x:Float,
+        var y:Float,
+        var start:Float,
+        var duration: Float,
+        var index:Int,
+        var expRate:Float,
+        var time:Float,
+        var len:Float)
+
     private var context: Context
     //private var width:Int=0
     //private var height:Int=0
@@ -101,8 +131,9 @@ class PianoRollViewRenderer(context: Context): GLSurfaceView.Renderer {
     private lateinit var texMapKobushi:TexMap0
     private lateinit var texProgressBar:TexMap0
     private lateinit var rectangle:Rectangle
+    private lateinit var texBlink0: TexBlink0
     private var texMapNoteIndicator = mutableListOf<TexMap0>()
-
+    private var texBlinks = mutableListOf<TexBlink1>()
 
     private val COLOR_OUT_OF_SECTION = Color(0.0f,0.0f,0.0f,0.4f)
     private val COLOR_EXAMPLE1_NOTE = Color(0x94/255.0f, 0x97/255.0f,0x9a/255.0f,1.0f)
@@ -152,8 +183,19 @@ class PianoRollViewRenderer(context: Context): GLSurfaceView.Renderer {
     private var eventQueue:MutableList<EventInfo> = mutableListOf()
     private var eventAnimationQueue:MutableMap<EventInfo,Float> = mutableMapOf()
     private var currentNotes:List<KaraokeGrader.Mora> = listOf()
+    private var judgmentBlocks:MutableList<BlockInfo> = mutableListOf()
+    private var currJudgmentBlocks:MutableList<BlockInfo> = mutableListOf()
+    private var preSongLineBlocks:MutableList<PreSongLineBlock> = mutableListOf()
+    private var preSongSeekLine:Float=0.0f
+    private var songMatchEffectParams:MutableList<SongMatchEffectParam> = mutableListOf()
+    private var songMatchEffects:MutableList<SongMatchEffect> = mutableListOf()
+    private var songMatchLen:Float=0.0f
+    private var songMismatchLen:Float=0.0f
+    private var songMatchEffect1On = false
+    private var songMatchEffect2On = false
 
     var playTime: Float = 0.0f
+    var key: Int = 0
 
     private val lock = java.util.concurrent.locks.ReentrantLock()
 
@@ -191,6 +233,7 @@ class PianoRollViewRenderer(context: Context): GLSurfaceView.Renderer {
             }
         }
     }
+
     fun addDetectedEvent(time:Float, vocalNo:Int, criteriaNo:Int, type:String){
         lock.withLock {
             var note = getEventNote(time)
@@ -204,6 +247,62 @@ class PianoRollViewRenderer(context: Context): GLSurfaceView.Renderer {
             }
         }
     }
+
+    fun addjudgmentBlock(judgmentBlock:BlockInfo){
+        lock.withLock {
+            judgmentBlocks.add(judgmentBlock)
+
+            if( judgmentBlock.matched > 0 ){
+                songMismatchLen = 0.0f
+                songMatchLen += judgmentBlock.noteInfo.duration.toFloat()
+
+                if( !songMatchEffect1On ){
+                    if( songMatchLen > 3.0f ){
+                        songMatchEffect1On = true
+                    }
+                }
+                if( !songMatchEffect2On ){
+                    if( songMatchLen > 15.0f ){
+                        songMatchEffect2On = true
+                    }
+                }
+            }
+            else{
+                songMismatchLen += judgmentBlock.noteInfo.duration.toFloat()
+
+                if( songMatchEffect1On || songMatchEffect2On ){
+                    if( songMismatchLen > 1.0f ){
+                        songMatchEffect1On=false
+                        songMatchEffect2On=false
+                        songMatchLen = 0.0f
+                    }
+                }
+                else{
+                    songMatchEffect1On=false
+                    songMatchEffect2On=false
+                    songMatchLen = 0.0f
+                }
+            }
+            if( (songMatchEffect1On||songMatchEffect2On) && judgmentBlock.matched!=0){
+                var p = SongMatchEffectParam(
+                            judgmentBlock.noteInfo.time.toFloat(),
+                            judgmentBlock.noteInfo.duration.toFloat(),
+                            judgmentBlock.noteInfo.note.toFloat(),
+                            elapsedTime
+                        )
+                songMatchEffectParams.add( p )
+                //Log.d(TAG,p.toString())
+            }
+
+            //currJudgmentBlocks
+            if(currSectionNumber>=0){
+                if(section.head <= judgmentBlock.noteInfo.time + judgmentBlock.noteInfo.duration && judgmentBlock.noteInfo.time < section.tail){
+                    currJudgmentBlocks.add(judgmentBlock)
+                }
+            }
+        }
+    }
+
 
     private fun getSectionByTime(time:Float): Int {
         for(i in 0 until graderInfo.gradingSections.count()){
@@ -314,6 +413,10 @@ class PianoRollViewRenderer(context: Context): GLSurfaceView.Renderer {
         return x * x * x
     }
 
+    private fun mix(x:Float,y:Float,a:Float):Float{
+        return x * ( 1 - a ) + y * a
+    }
+
     override fun onSurfaceCreated(p0: GL10?, p1: EGLConfig?) {
         // Set the background frame color
         GLES32.glClearColor(0.0f, 0.0f, 0.0f, 0.0f)
@@ -337,6 +440,26 @@ class PianoRollViewRenderer(context: Context): GLSurfaceView.Renderer {
             var t = TexMap0(context,i)
             texMapNoteIndicator.add(t)
         }
+        texBlink0 = TexBlink0(context,R.drawable.icon_songline_3x)
+
+        var imgKiraIds = arrayOf(
+            R.drawable.kira11x_3x,
+            R.drawable.kira12x_3x,
+            R.drawable.kira13x_3x,
+            R.drawable.kira14x_3x,
+            R.drawable.kira21x_3x,
+            R.drawable.kira22x_3x,
+            R.drawable.kira23x_3x,
+        )
+        for(i in imgKiraIds){
+            var t = TexBlink1(context,i)
+            texBlinks.add(t)
+        }
+        songMatchLen=0.0f
+        songMismatchLen=0.0f
+        songMatchEffect1On = false
+        songMatchEffect2On = false
+
     }
 
     override fun onSurfaceChanged(p0: GL10?, width: Int, height: Int) {
@@ -386,6 +509,9 @@ class PianoRollViewRenderer(context: Context): GLSurfaceView.Renderer {
 
                     notes1InSection = getTehonNotesInRange(section.head.toFloat(),section.tail.toFloat(),0)
                     notes2InSection = getTehonNotesInRange(section.head.toFloat(),section.tail.toFloat(),1)
+                    currJudgmentBlocks = mutableListOf()
+
+                    processPreSongLineOnSectionChanged()
                 }
                 currentNotes = getCurrentNotes(playTime,0.0f,false)
                 var scrollEndTime = scrollStartTime + SCROLL_TIME
@@ -424,12 +550,14 @@ class PianoRollViewRenderer(context: Context): GLSurfaceView.Renderer {
                 if(f0Infos.count() >= BLOCK_LENGTH){
                     judgmentTime = max((min(playTime,f0Infos.last().time)*100)/100.0f,BLOCK_LENGTH/100.0f) - BLOCK_LENGTH/100.0f
                 }
-
-                drawSectionLines()
+                processPreSongLine()
+                drawSongLine()
                 drawOutOfSections()
-
                 drawF0()
+                drawSongMatchEffect()
+                drawPreSongLine()
                 drawEvent()
+                drawSectionLines()
                 drawProgressBar()
                 drawNoteIndicator()
             }
@@ -516,6 +644,14 @@ class PianoRollViewRenderer(context: Context): GLSurfaceView.Renderer {
 
         rectangle.draw(viewSize,Vec2(width,height),Vec2(x,y),edge,color)
     }
+
+    private fun drawSongLine(){
+        //currJudgmentBlocks
+        for(note in currJudgmentBlocks){
+            drawNote(note.noteInfo.time.toFloat(),note.noteInfo.duration.toFloat(),note.noteInfo.note,NoteType.SONG_MATCH,true,note.fixedTime)
+        }
+    }
+
     private fun drawF0(){
         val startIndex = (section.head*100).toInt()
         if(startIndex < f0Infos.count()){
@@ -529,6 +665,217 @@ class PianoRollViewRenderer(context: Context): GLSurfaceView.Renderer {
             }
         }
     }
+
+    private fun drawSongMatchEffect(){
+        songMatchEffectParams = songMatchEffectParams.filter { it.time >= section.head } as MutableList<SongMatchEffectParam>
+        songMatchEffects = songMatchEffects.filter { it.start + it.duration > elapsedTime } as MutableList<SongMatchEffect>
+
+        var particleDurationMin = 0.6f
+        var particleDurationMax = 1.0f
+        var yMaxOffsets = arrayOf(0.0f,0.0f)
+        var yMinOffset = 0.0f
+        var texIndexes:Array<Int> = arrayOf()
+        if(songMatchEffect2On) {
+            yMaxOffsets[0] = 7.0f
+            yMaxOffsets[1] = -3.0f
+            yMinOffset = -6.0f
+            texIndexes = arrayOf(0,1,2,3,4,5,6)
+        }
+        else{
+            yMaxOffsets[0] = 2.0f
+            yMaxOffsets[1] = -3.0f
+            yMinOffset = -1.0f
+            texIndexes = arrayOf(0,1,2,3)
+        }
+        var expRates = arrayOf(1.0f,1.0f,1.0f,2.0f,2.0f,3.0f)
+        //var texIndexMin = 0
+        //var texIndexMax = texIndexes.count()
+
+        if( currSectionNumber >= 0 ){
+            for((index,param) in songMatchEffectParams.withIndex()){
+                if(param.time < judgmentTime && param.effectStart < elapsedTime){
+                    var xMin = param.time
+                    var xMax = xMin + param.len
+                    var emitNum = param.len / (if(songMatchEffect2On) 0.075f else 0.15f )
+                    if(emitNum < 1.0f){
+                        emitNum = 1.0f
+                    }
+                    for(j in 0 until 2){
+                        var yMax = param.note+yMaxOffsets[j]
+                        var yMin = yMax + yMinOffset
+                        for(k in 0 until emitNum.toInt()){
+                            var x = mix(xMin,xMax,Math.random().toFloat())
+                            var y = mix(yMin,yMax,Math.random().toFloat())
+                            var start = param.effectStart + mix(0.0f,0.05f,Math.random().toFloat())
+                            var duration = mix(particleDurationMin,particleDurationMax,Math.random().toFloat())
+                            var index = texIndexes[texIndexes.indices.random()]
+                            var expRate = expRates[expRates.indices.random()]
+
+                            var f = SongMatchEffect(
+                                x,y,start,duration,index,expRate,param.time,param.len
+                            )
+                            songMatchEffects.add(
+                                f
+                            )
+                            Log.d(TAG,f.toString())
+                        }
+                    }
+                    param.effectStart += mix(0.8f,1.0f,Math.random().toFloat())
+                    if(param.effectStart < elapsedTime){
+                        param.effectStart = elapsedTime + mix(0.0f,0.5f,Math.random().toFloat())
+                    }
+                    songMatchEffectParams[index] = param
+                }
+            }
+        }
+        for(effect in songMatchEffects){
+            if( effect.x < section.head){
+                continue
+            }
+            var y = offset.y + pianoRollSize.y - ((effect.y * (noteHeight + HORIZONTAL_LINE_HEIGHT)/2.0f) - adjustScrollValue)
+            var x = offset.x + (effect.x - section.head.toFloat()) * sectionSpeed
+
+            var texSize = texBlinks[effect.index].bmpSize.copy()
+            texSize.x *= effect.expRate
+            texSize.y *= effect.expRate
+            var texPos = Vec2(x - texSize.x/2.0f,y - texSize.y/2.0f)
+
+            texBlinks[effect.index].draw(viewSize,texSize,texPos,effect.start,effect.duration,elapsedTime)
+        }
+    }
+
+    private fun processPreSongLineOnSectionChanged(){
+        preSongLineBlocks = mutableListOf()
+        var notesInSections = arrayOf(notes1InSection,notes2InSection)
+        for((tehonNumber,notesInSection) in notesInSections.withIndex()){
+            if(notesInSection.isNotEmpty()){
+                var firstNoteTime = if( notes1InSection.first().time > section.head ) notes1InSection.first().time else section.head
+                var startTime = firstNoteTime.toFloat()
+                while(startTime < section.tail){
+                    preSongLineBlocks.add(
+                        PreSongLineBlock(startTime,0.0f,0,tehonNumber,false)
+                    )
+                    startTime += 0.03f
+                }
+            }
+        }
+        preSongLineBlocks.sortWith(compareBy<PreSongLineBlock>{it.time}.thenBy { it.tehonNumber })
+    }
+    private fun processPreSongLine(){
+        fun getCurrentOtehonNote(currentTime:Float,margin:Float,index:Int):KaraokeGrader.Mora?{
+            var notesInSections = arrayOf(notes1InSection,notes2InSection)
+            var result:KaraokeGrader.Mora?=null
+            var prev:KaraokeGrader.Mora?=null
+            var found=false
+            var prevFound=false
+            for(note in notesInSections[index]){
+                if(note.time <= currentTime && currentTime <= note.time + note.duration + margin){
+                    result = note
+                    break
+                }
+                else if(currentTime < note.time){
+                    result = prev
+                    break
+                }
+                prev=note
+            }
+            if(result==null){
+                result = prev
+            }
+            return result
+        }
+        fun octaveShift(f0:Float, tehon:Int):Float{
+            if(tehon!=0 && f0!=0.0f){
+                var f0Shift=f0
+                var tehonOctave = tehon / 12
+                var f0Octave = (f0Shift / 12).toInt()
+                if(tehonOctave != f0Octave){
+                    var scale = f0Shift % 12.0f
+                    f0Shift = tehonOctave * 12.0f + scale
+                }
+                var diff = tehon.toFloat() - f0Shift
+                if(diff < -6 ){
+                    f0Shift -= 12
+                }
+                else if(diff>6){
+                    f0Shift += 12
+                }
+                return f0Shift
+            }
+            return 0.0f
+        }
+        if(f0Infos.isEmpty()){
+            return
+        }
+        var lastTime = if(playTime < f0Infos.last().time) playTime else f0Infos.last().time
+        if(lastTime < 0.02f){
+            return
+        }
+        preSongSeekLine = lastTime - 0.02f
+        for((index,preSongLineBlock) in preSongLineBlocks.withIndex()){
+            if(preSongLineBlock.time <= preSongSeekLine && !preSongLineBlock.judged){
+                var notes:MutableList<Float> = mutableListOf()
+                var blockTime = ((preSongLineBlock.time - (if( 0.02f < preSongSeekLine) 0.02f else preSongSeekLine))/0.01f).toInt()
+                var blockLen = (0.03f/0.01f).toInt()
+
+                var f0InfosSub = f0Infos.subList(blockTime,blockTime+blockLen)
+
+                for(f0Info in f0InfosSub){
+                    for( index in 0 until f0Info.notes.count()){
+                        if(index == preSongLineBlock.tehonNumber){
+                            var note = f0Info.notes[index]
+                            if(note < 2 || note > 125){
+                                continue
+                            }
+                            notes.add(note)
+                        }
+                    }
+                }
+                if(notes.isNotEmpty()){
+                    if(notes.count()==1){
+                        preSongLineBlock.f0 = notes[0]
+                    }
+                    else{
+                        notes.sort()
+                        if(notes.count() % 2 == 1){
+                            preSongLineBlock.f0 = notes[notes.count()/2]
+                        }
+                        else{
+                            var n1 = notes[notes.count()/2]
+                            var n2 = notes[notes.count()/2-1]
+                            preSongLineBlock.f0 = if(n1>n2) n1 else n2
+                        }
+                    }
+                    var tehonNote = getCurrentOtehonNote(preSongLineBlock.time,0.0f,preSongLineBlock.tehonNumber)
+                    if(tehonNote!=null){
+                        preSongLineBlock.f0 = octaveShift(preSongLineBlock.f0,tehonNote.note)
+                    }
+                }
+                else{
+                    preSongLineBlock.f0=0.0f
+                }
+                preSongLineBlock.judged=true
+                preSongLineBlocks[index] = preSongLineBlock
+            }
+        }
+    }
+    private fun drawPreSongLine(){
+        for(preSongLineBlock in preSongLineBlocks){
+            if(preSongLineBlock.judged && currSectionNumber>=0){
+                if(preSongLineBlock.time <= preSongSeekLine && preSongSeekLine <= preSongLineBlock.time+0.5f){
+                    var start = preSongLineBlock.time
+                    var duration = 0.5f
+                    var time = preSongSeekLine
+
+                    var x = offset.x + (preSongLineBlock.time - section.head) * sectionSpeed
+                    var y = offset.y + pianoRollSize.y - ((preSongLineBlock.f0 - key.toFloat()) * (noteHeight + HORIZONTAL_LINE_HEIGHT)/2.0f - adjustScrollValue)
+                    var tetPos = Vec2(x.toFloat()-texBlink0.bmpSize.x/2.0f,y.toFloat() - texBlink0.bmpSize.y/2.0f)
+                    texBlink0.draw(viewSize,tetPos,start,duration,time,0.2f)
+                }
+            }
+        }
+    }
+
     private fun drawEvent(){
         val secPreFrame = 1001.0f/30000.0f
         val coeff = (noteHeight+HORIZONTAL_LINE_HEIGHT) * 8.0f / (secPreFrame*8.0f).pow(2.0f)

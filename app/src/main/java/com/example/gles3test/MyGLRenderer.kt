@@ -16,6 +16,10 @@ class MyGLRenderer (context: Context): GLSurfaceView.Renderer {
     private lateinit var mTextMap3: TexMap3
     private lateinit var mTextMap4: TexMap4
     private lateinit var mTextMap5: TexMap5
+
+    private lateinit var mTexBlink: TexBlink
+    private lateinit var mTexBlink1: TexBlink1
+
     private lateinit var mRectangle: Rectangle
     private lateinit var mRadiation: Radiation
     private lateinit var mPentagon: Pentagon
@@ -28,6 +32,10 @@ class MyGLRenderer (context: Context): GLSurfaceView.Renderer {
     //private var width:Int=0
     //private var height:Int=0
     private var viewSize = Vec2(0.0f,0.0f)
+    private var startTime:Long = 0
+    private var blinkStart = 2.0f
+    private var blinkDuration = 1.0f
+    private var blinkFadeTime = 0.2f
 
     init {
         this.context = context
@@ -47,6 +55,9 @@ class MyGLRenderer (context: Context): GLSurfaceView.Renderer {
         mTextMap5 = TexMap5(context,ids)
         mPentagon = Pentagon(context)
 
+        mTexBlink = TexBlink(context,R.drawable.lucky_yotsuba_clover_girl)
+        mTexBlink1 = TexBlink1(context,R.drawable.lucky_yotsuba_clover_girl)
+
         mLines = Lines(context)
         mRectangle = Rectangle(context)
         mRadiation = Radiation(context)
@@ -57,9 +68,16 @@ class MyGLRenderer (context: Context): GLSurfaceView.Renderer {
 //        mCompShader3.execute()
 //        mCompShader4=CompShader4(context,"shader.es30-6.computeshader")
 //        mCompShader4.execute()
+        startTime = System.currentTimeMillis()
+
     }
 
     override fun onDrawFrame(unused: GL10) {
+
+        var currTime = System.currentTimeMillis()
+        var elapsedTime = (currTime - startTime)/1000.0f
+        //Log.d("TEST",elapsedTime.toString())
+
         GLES32.glBlendFunc(GLES32.GL_SRC_ALPHA, GLES32.GL_ONE_MINUS_SRC_ALPHA);
         GLES32.glEnable(GLES32.GL_BLEND);
         // Redraw background color
@@ -81,8 +99,10 @@ class MyGLRenderer (context: Context): GLSurfaceView.Renderer {
         mTextMap5.draw(viewSize,texSize, texPos)
         val texPos2 = Vec2(10.0f,10.0f)
         //mTextMap4.draw(viewSize,texPos2)
-        mTextMap3.draw(viewSize,texPos2)
+        //mTextMap3.draw(viewSize,texPos2)
 
+        //mTexBlink.draw(viewSize,texPos2,blinkStart,blinkDuration,elapsedTime,blinkFadeTime)
+        mTexBlink1.draw(viewSize,texPos2,blinkStart,blinkDuration,elapsedTime)
         //mRectangle.draw(width.toFloat(),height.toFloat(),width.toFloat(),height.toFloat(),0.0f,0.0f,100.0f)
 
         //val viewSize = Vec2(width.toFloat(),height.toFloat())

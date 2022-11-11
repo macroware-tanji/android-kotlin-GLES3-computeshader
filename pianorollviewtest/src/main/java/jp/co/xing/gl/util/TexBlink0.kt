@@ -11,7 +11,7 @@ import java.nio.ShortBuffer
 
 
 
-class TexMap0(context: Context, drawableId:Int) {
+class TexBlink0(context: Context, drawableId:Int) {
     private val COORDS_PER_VERTEX = 3
     private var rectCoords = floatArrayOf(
         // in counterclockwise order:
@@ -33,6 +33,7 @@ class TexMap0(context: Context, drawableId:Int) {
         0,1,2,
         0,2,3
     )
+
 
 //    private val vertexShaderCode =
 //        "attribute vec4 vPosition;" +
@@ -128,19 +129,21 @@ class TexMap0(context: Context, drawableId:Int) {
     private var vboVertex = VertexBufferObject()//IntBuffer.allocate(1)
     private var vboUV = VertexBufferObject()//IntBuffer.allocate(1)
 
-    private var uboInfo: UniformBufferObject = UniformBufferObject()
+    private var uboVertInfo: UniformBufferObject = UniformBufferObject()
+    private var uboFragInfo: UniformBufferObject = UniformBufferObject()
     //private var ssboDims: ShaderStrageBufferObject = ShaderStrageBufferObject()
 
     var bmpSize = Vec2(0.0f,0.0f)
     //private var bmpWidth:Int=0
     //private var bmpHeight:Int=0
     private var vao = VertexArrayObject()
-    private var vertInfo = FloatBuffer.allocate(6)
+    private var vertInfo = FloatBuffer.allocate(10)
+    private var fragInfo = FloatBuffer.allocate(4)
 
     init {
         this.context = context
-        val vertexShader: Int = loadShaderFromAssets(GLES32.GL_VERTEX_SHADER, "texmap-0.vertexshader")
-        val fragmentShader: Int = loadShaderFromAssets(GLES32.GL_FRAGMENT_SHADER, "texmap-0.fragmentshader")
+        val vertexShader: Int = loadShaderFromAssets(GLES32.GL_VERTEX_SHADER, "texblink-0.vertexshader")
+        val fragmentShader: Int = loadShaderFromAssets(GLES32.GL_FRAGMENT_SHADER, "texblink-0.fragmentshader")
 
         // create empty OpenGL ES Program
         mProgram = GLES32.glCreateProgram().also {
@@ -223,12 +226,17 @@ class TexMap0(context: Context, drawableId:Int) {
         //dims.put(2,0.0f)
         //dims.put(3,0.0f)
 
-        uboInfo.gen()
-        uboInfo.bind()
-        uboInfo.bufferData(vertInfo.capacity()*4,vertInfo, DataStoreUsage.DYNAMIC_DRAW)
-        uboInfo.bindBufferBase(0)
-        uboInfo.unbind()
+        uboVertInfo.gen()
+        uboVertInfo.bind()
+        uboVertInfo.bufferData(vertInfo.capacity()*4,vertInfo, DataStoreUsage.DYNAMIC_DRAW)
+        uboVertInfo.bindBufferBase(0)
+        uboVertInfo.unbind()
 
+        uboFragInfo.gen()
+        uboFragInfo.bind()
+        uboFragInfo.bufferData(fragInfo.capacity()*4,fragInfo, DataStoreUsage.DYNAMIC_DRAW)
+        uboFragInfo.bindBufferBase(1)
+        uboFragInfo.unbind()
 //        ssboDims.gen()
 //        ssboDims.bind()
 //        ssboDims.bufferData(dims.capacity()*4,dims,DataStoreUsage.DYNAMIC_DRAW)
@@ -241,12 +249,11 @@ class TexMap0(context: Context, drawableId:Int) {
 //    private val vertexCount: Int = rectCoords.size / COORDS_PER_VERTEX
 //    private val vertexStride: Int = COORDS_PER_VERTEX * 4 // 4 bytes per vertex
 //    private val uvStride: Int = UV_COORDS_PER_VERTEX * 4 // 4 bytes per vertex
-
-    fun draw(viewSize: Vec2, texPos: Vec2) {
-        draw(viewSize,bmpSize,texPos)
+    fun draw(viewSize: Vec2, texPos: Vec2, start:Float, duration:Float, time:Float, fadeTime:Float) {
+        draw(viewSize,bmpSize,texPos,start,duration,time,fadeTime)
     }
 
-    fun draw(viewSize: Vec2, texSize: Vec2, texPos: Vec2) {
+    fun draw(viewSize: Vec2, texSize: Vec2, texPos: Vec2, start:Float, duration:Float, time:Float, fadeTime:Float) {
         // Add program to OpenGL ES environment
         GLES32.glUseProgram(mProgram)
         vao.bind()
@@ -261,17 +268,30 @@ class TexMap0(context: Context, drawableId:Int) {
         vertInfo.put(3,texSize.y)
         vertInfo.put(4,texPos.x)
         vertInfo.put(5,texPos.y)
+        vertInfo.put(6,start)
+        vertInfo.put(7,duration)
+        vertInfo.put(8,time)
+        vertInfo.put(9,fadeTime)
 
-        uboInfo.bind()
-        uboInfo.bufferSubData(0,vertInfo.capacity()*4,vertInfo)
-        uboInfo.bindBufferBase(0)
+        uboVertInfo.bind()
+        uboVertInfo.bufferSubData(0,vertInfo.capacity()*4,vertInfo)
+        uboVertInfo.bindBufferBase(0)
 
+        fragInfo.put(0,start)
+        fragInfo.put(1,duration)
+        fragInfo.put(2,time)
+        fragInfo.put(3,fadeTime)
+
+        uboFragInfo.bind()
+        uboFragInfo.bufferSubData(0,fragInfo.capacity()*4,fragInfo)
+        uboFragInfo.bindBufferBase(1)
 //        ssboDims.bind()
 //        ssboDims.bufferSubData(0,dims.capacity()*4,dims)
 
         GLES32.glDrawElements(GLES32.GL_TRIANGLES, 6, GLES32.GL_UNSIGNED_SHORT, 0);
 
-        uboInfo.unbind()
+        uboVertInfo.unbind()
+        uboFragInfo.unbind()
 //        ssboDims.unbind()
 
         tex.unbind()

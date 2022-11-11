@@ -6,6 +6,7 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import com.google.gson.Gson
 import jp.co.brother.rex.KaraokeGrader
 import jp.co.xing.gl.renderer.PianoRollViewRenderer
@@ -73,6 +74,11 @@ class MainActivity : AppCompatActivity() {
         val jsonDetectedEvent = this.getAssets().open("detectedEvent.json").reader(charset=Charsets.UTF_8).use{it.readText()}
         val jsonDetectedEventRoot = Gson().fromJson(jsonDetectedEvent, DetectedEvent::class.java)
 
+        var judgmentBlocks = getJudgmentBlocks()
+        for(b in judgmentBlocks){
+            Log.d("MainActivity",b.toString())
+        }
+
         initPianoRollView()
 
         startTime = System.currentTimeMillis()
@@ -81,6 +87,7 @@ class MainActivity : AppCompatActivity() {
             override fun run() {
                 var startIndex = 0
                 var eventStartIndex = 0
+                var judgmentStartIndex = 0
                 while (true){
 
                     val current = System.currentTimeMillis()
@@ -106,6 +113,18 @@ class MainActivity : AppCompatActivity() {
                             if(detectedEvent.time < elapsedTime.toFloat()/1000.0f - 0.31f - 0.2f){
                                 pianoRollViewRenderer.addDetectedEvent(detectedEvent.time,detectedEvent.vocalNo,detectedEvent.vocalNo,detectedEvent.type)
                                 eventStartIndex = i + 1
+                            }
+                            else{
+                                break;
+                            }
+                        }
+                        for(i in judgmentStartIndex until judgmentBlocks.count()){
+                            var j = judgmentBlocks[i]
+                            if(j.noteInfo.time < elapsedTime.toFloat()/1000.0f - 0.31f ){
+                                j.matched = 1
+                                j.fixedTime = elapsedTime.toFloat()/1000.0f
+                                pianoRollViewRenderer.addjudgmentBlock(j)
+                                judgmentStartIndex = i + 1
                             }
                             else{
                                 break;
@@ -142,5 +161,48 @@ class MainActivity : AppCompatActivity() {
         pianoRollViewRenderer.playTime = 0.0f
         // Set the Renderer for drawing on the GLSurfaceView
         binding.pianorollview.setRenderer(pianoRollViewRenderer)
+    }
+    private fun getJudgmentBlocks():MutableList<PianoRollViewRenderer.BlockInfo>{
+        var result:MutableList<PianoRollViewRenderer.BlockInfo> = mutableListOf()
+        for((tehonNumber, criteria) in graderInfo.criteria.withIndex()){
+            for(noteInfo in criteria.notes){
+                var blockLength = 0.31f
+                var blockCount = (noteInfo.duration / blockLength).toInt()
+                var blockRemain = noteInfo.duration % blockLength
+                for(blockIndex in 0 until blockCount){
+                    var time = noteInfo.time + blockIndex * blockLength
+                    result.add(
+                        PianoRollViewRenderer.BlockInfo(
+                            tehonNumber,
+                            KaraokeGrader.Mora(
+                                time,
+                                blockLength.toDouble(),
+                                noteInfo.note,
+                                noteInfo.flag
+                            ),
+                            false,
+                            0,
+                            0.0f)
+                    )
+                }
+                if(blockRemain > 0.0f){
+                    var time = noteInfo.time + blockCount * blockLength
+                    result.add(
+                        PianoRollViewRenderer.BlockInfo(
+                            tehonNumber,
+                            KaraokeGrader.Mora(
+                                time,
+                                blockRemain.toDouble(),
+                                noteInfo.note,
+                                noteInfo.flag
+                            ),
+                            blockCount > 0 && blockRemain < 0.15f,
+                            0,
+                            0.0f)
+                    )
+                }
+            }
+        }
+        return result
     }
 }
