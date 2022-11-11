@@ -4,7 +4,6 @@ import android.graphics.PixelFormat
 import android.opengl.GLSurfaceView
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
 import com.google.gson.Gson
 import jp.co.brother.rex.KaraokeGrader
 import jp.co.xing.karaokejoysound.gles.renderer.PianoRollViewRenderer
@@ -46,7 +45,7 @@ class MainActivity : AppCompatActivity() {
 
         //var criteria = KaraokeGrader.Criteria()
         //var graderInfo = KaraokeGrader.GraderInfo()
-        val jsonCriteria = this.getAssets().open("criteria.json").reader(charset=Charsets.UTF_8).use{it.readText()}
+        val jsonCriteria = this.getAssets().open("sampledata/criteria.json").reader(charset=Charsets.UTF_8).use{it.readText()}
         val criteriaRoot = Gson().fromJson(jsonCriteria, CriteriaRoot::class.java)
 
         var criteriaList:MutableList<KaraokeGrader.Criteria> = mutableListOf()
@@ -58,7 +57,7 @@ class MainActivity : AppCompatActivity() {
         var criteriaArray = criteriaList.toTypedArray()
 
 
-        val jsonSections = this.getAssets().open("grdingSection.json").reader(charset=Charsets.UTF_8).use{it.readText()}
+        val jsonSections = this.getAssets().open("sampledata/grdingSection.json").reader(charset=Charsets.UTF_8).use{it.readText()}
         val sectionsRoot = Gson().fromJson(jsonSections, Sections::class.java)
 
         var gradingSectionArray = sectionsRoot.sections.toTypedArray()
@@ -66,10 +65,10 @@ class MainActivity : AppCompatActivity() {
         graderInfo = KaraokeGrader.GraderInfo(1, arrayOf(0.0,0.0),criteriaArray,gradingSectionArray)
 
 
-        val jsonDetectedPitch = this.getAssets().open("detectedPitch.json").reader(charset=Charsets.UTF_8).use{it.readText()}
+        val jsonDetectedPitch = this.getAssets().open("sampledata/detectedPitch.json").reader(charset=Charsets.UTF_8).use{it.readText()}
         val jsonDetectedPitchRoot = Gson().fromJson(jsonDetectedPitch, DetectedPitch::class.java)
 
-        val jsonDetectedEvent = this.getAssets().open("detectedEvent.json").reader(charset=Charsets.UTF_8).use{it.readText()}
+        val jsonDetectedEvent = this.getAssets().open("sampledata/detectedEvent.json").reader(charset=Charsets.UTF_8).use{it.readText()}
         val jsonDetectedEventRoot = Gson().fromJson(jsonDetectedEvent, DetectedEvent::class.java)
 
         var judgmentBlocks = getJudgmentBlocks()
