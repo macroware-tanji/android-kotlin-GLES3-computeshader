@@ -1,4 +1,4 @@
-package jp.co.xing.pianorollviewtest
+package jp.co.xing.karaokejoysound.xing.pianorollviewtest
 
 import org.junit.Test
 

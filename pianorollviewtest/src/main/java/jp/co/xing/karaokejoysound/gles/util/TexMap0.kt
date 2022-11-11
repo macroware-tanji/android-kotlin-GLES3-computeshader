@@ -1,4 +1,4 @@
-package jp.co.xing.gl.util
+package jp.co.xing.karaokejoysound.gles.util
 
 //import android.R
 import android.content.Context
@@ -139,8 +139,8 @@ class TexMap0(context: Context, drawableId:Int) {
 
     init {
         this.context = context
-        val vertexShader: Int = loadShaderFromAssets(GLES32.GL_VERTEX_SHADER, "texmap-0.vertexshader")
-        val fragmentShader: Int = loadShaderFromAssets(GLES32.GL_FRAGMENT_SHADER, "texmap-0.fragmentshader")
+        val vertexShader: Int = loadShaderFromAssets(GLES32.GL_VERTEX_SHADER, "shaders/texmap-0.vertexshader")
+        val fragmentShader: Int = loadShaderFromAssets(GLES32.GL_FRAGMENT_SHADER, "shaders/texmap-0.fragmentshader")
 
         // create empty OpenGL ES Program
         mProgram = GLES32.glCreateProgram().also {

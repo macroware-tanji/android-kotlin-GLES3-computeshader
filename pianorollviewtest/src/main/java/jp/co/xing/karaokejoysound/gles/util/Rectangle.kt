@@ -1,4 +1,4 @@
-package jp.co.xing.gl.util
+package jp.co.xing.karaokejoysound.gles.util
 
 import android.content.Context
 import android.opengl.GLES32
@@ -78,8 +78,8 @@ class Rectangle(context: Context) {
 
     init {
         this.context = context
-        val vertexShader: Int = loadShaderFromAssets(GLES32.GL_VERTEX_SHADER, "rectangle-0.vertexshader")
-        val fragmentShader: Int = loadShaderFromAssets(GLES32.GL_FRAGMENT_SHADER, "rectangle-0.fragmentshader")
+        val vertexShader: Int = loadShaderFromAssets(GLES32.GL_VERTEX_SHADER, "shaders/rectangle-0.vertexshader")
+        val fragmentShader: Int = loadShaderFromAssets(GLES32.GL_FRAGMENT_SHADER, "shaders/rectangle-0.fragmentshader")
 
         // create empty OpenGL ES Program
         mProgram = GLES32.glCreateProgram().also {

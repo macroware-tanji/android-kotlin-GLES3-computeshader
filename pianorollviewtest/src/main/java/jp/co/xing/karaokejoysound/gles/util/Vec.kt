@@ -1,4 +1,4 @@
-package jp.co.xing.gl.util
+package jp.co.xing.karaokejoysound.gles.util
 
 data class Vec2(var x: Float, var y: Float)
 data class Vec3(var x: Float, var y: Float, var z: Float)

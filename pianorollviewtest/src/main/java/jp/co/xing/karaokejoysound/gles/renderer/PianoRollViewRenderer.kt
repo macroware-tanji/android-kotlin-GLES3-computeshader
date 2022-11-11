@@ -1,4 +1,4 @@
-package jp.co.xing.gl.renderer
+package jp.co.xing.karaokejoysound.gles.renderer
 
 import android.content.Context
 import android.opengl.GLES32
@@ -6,7 +6,7 @@ import android.opengl.GLSurfaceView
 import android.util.Log
 import androidx.core.math.MathUtils
 import jp.co.brother.rex.KaraokeGrader
-import jp.co.xing.gl.util.*
+import jp.co.xing.karaokejoysound.gles.util.*
 import jp.co.xing.pianorollviewtest.R
 //import java.lang.Math.pow
 import javax.microedition.khronos.egl.EGLConfig
@@ -242,7 +242,7 @@ class PianoRollViewRenderer(context: Context): GLSurfaceView.Renderer {
                 var f = eventQueue.filter { it.time== e.time && it.type == e.type && it.note == e.note }
                 if(f.isEmpty()){
                     eventQueue.add(e)
-                    Log.d(TAG,e.toString())
+                    //Log.d(TAG,e.toString())
                 }
             }
         }
@@ -394,16 +394,31 @@ class PianoRollViewRenderer(context: Context): GLSurfaceView.Renderer {
     private fun getCurrentNotes(currentTime:Float, margin:Float, fixed:Boolean): List<KaraokeGrader.Mora> {
         var notes:MutableList<KaraokeGrader.Mora> = mutableListOf()
 
-        for(note in notes1InSection){
-            if(note.time <= currentTime && currentTime <= note.time + note.duration + margin){
-                notes.add(note)
+        var notesInSections = arrayOf(notes1InSection,notes2InSection)
+        for((index,notesInSection) in notesInSections.withIndex()){
+            for(note in notesInSection){
+                if(note.time <= currentTime && currentTime <= note.time + note.duration + margin){
+                    notes.add(note)
+                    break
+                }
+            }
+            if(fixed && notes.count() > index){
+                notes.add(KaraokeGrader.Mora(currentTime.toDouble(),0.0,0,0))
             }
         }
-        for(note in notes2InSection){
-            if(note.time <= currentTime && currentTime <= note.time + note.duration + margin){
-                notes.add(note)
-            }
-        }
+//
+//        for(note in notes1InSection){
+//            if(note.time <= currentTime && currentTime <= note.time + note.duration + margin){
+//                notes.add(note)
+//                break
+//            }
+//        }
+//        for(note in notes2InSection){
+//            if(note.time <= currentTime && currentTime <= note.time + note.duration + margin){
+//                notes.add(note)
+//                break
+//            }
+//        }
 
         return notes
     }
@@ -630,7 +645,7 @@ class PianoRollViewRenderer(context: Context): GLSurfaceView.Renderer {
             NoteType.SONG_MISMATCH_EXAMPLE2 -> COLOR_SONG_MISMATCH_EXAMPLE2
             NoteType.DEBUG_F0_EXAMPLE1 -> COLOR_DEBUG_F0_EXAMPLE1
             NoteType.DEBUG_F0_EXAMPLE2 -> COLOR_DEBUG_F0_EXAMPLE2
-            else -> Color(1.0f,1.0f,1.0f,1.0f)
+            //else -> Color(1.0f,1.0f,1.0f,1.0f)
         }
 
         var startX = start - section.head.toFloat()
@@ -638,7 +653,10 @@ class PianoRollViewRenderer(context: Context): GLSurfaceView.Renderer {
         var y = offset.y + pianoRollSize.y - (note * (noteHeight + HORIZONTAL_LINE_HEIGHT) / 2.0f - adjustScrollValue) - HORIZONTAL_LINE_HEIGHT/2.0f
         var width = duration * sectionSpeed
         var height = noteHeight + HORIZONTAL_LINE_HEIGHT
-        var progress  =  if(progressed && start + duration > section.head) (playTime - baseTime)/duration else 1.0f
+        if(progressed && start + duration > section.head){
+            var progress  =  MathUtils.clamp ((playTime - baseTime)/duration,0.0f,1.0f)
+            width *= progress
+        }
 
         var edge = noteHeight/2.0f
 
@@ -717,7 +735,7 @@ class PianoRollViewRenderer(context: Context): GLSurfaceView.Renderer {
                             songMatchEffects.add(
                                 f
                             )
-                            Log.d(TAG,f.toString())
+                            //Log.d(TAG,f.toString())
                         }
                     }
                     param.effectStart += mix(0.8f,1.0f,Math.random().toFloat())

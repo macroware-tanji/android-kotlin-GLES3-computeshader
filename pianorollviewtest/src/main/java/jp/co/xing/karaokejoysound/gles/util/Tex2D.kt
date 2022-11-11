@@ -1,4 +1,4 @@
-package jp.co.xing.gl.util
+package jp.co.xing.karaokejoysound.gles.util
 
 import android.graphics.Bitmap
 import android.opengl.GLES32

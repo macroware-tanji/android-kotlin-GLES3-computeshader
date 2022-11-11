@@ -1,4 +1,4 @@
-package jp.co.xing.pianorollviewtest
+package jp.co.xing.karaokejoysound.xing.pianorollviewtest
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -19,6 +19,6 @@ class ExampleInstrumentedTest {
     fun useAppContext() {
         // Context of the app under test.
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        assertEquals("jp.co.xing.pianorollviewtest", appContext.packageName)
+        assertEquals("jp.co.xing.karaokejoysound.xing.pianorollviewtest", appContext.packageName)
     }
 }

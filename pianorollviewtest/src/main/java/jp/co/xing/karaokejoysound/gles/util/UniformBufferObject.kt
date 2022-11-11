@@ -1,4 +1,4 @@
-package jp.co.xing.gl.util
+package jp.co.xing.karaokejoysound.gles.util
 
 import java.nio.IntBuffer
 import android.opengl.GLES32

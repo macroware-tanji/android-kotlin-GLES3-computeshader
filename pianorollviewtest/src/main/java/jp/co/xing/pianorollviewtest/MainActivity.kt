@@ -4,12 +4,10 @@ import android.graphics.PixelFormat
 import android.opengl.GLSurfaceView
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import com.google.gson.Gson
 import jp.co.brother.rex.KaraokeGrader
-import jp.co.xing.gl.renderer.PianoRollViewRenderer
+import jp.co.xing.karaokejoysound.gles.renderer.PianoRollViewRenderer
 import jp.co.xing.pianorollviewtest.databinding.ActivityMainBinding
 
 //data class Mora(var time:Double,var duration: Double,var note:Int, var flag:Int)
@@ -75,9 +73,9 @@ class MainActivity : AppCompatActivity() {
         val jsonDetectedEventRoot = Gson().fromJson(jsonDetectedEvent, DetectedEvent::class.java)
 
         var judgmentBlocks = getJudgmentBlocks()
-        for(b in judgmentBlocks){
-            Log.d("MainActivity",b.toString())
-        }
+        //for(b in judgmentBlocks){
+        //    Log.d("MainActivity",b.toString())
+        //}
 
         initPianoRollView()
 
@@ -92,7 +90,10 @@ class MainActivity : AppCompatActivity() {
 
                     val current = System.currentTimeMillis()
                     val elapsedTime = current - startTime
-                    pianoRollViewRenderer.playTime = elapsedTime.toFloat()/1000.0f
+                    var playTime = elapsedTime.toFloat()/1000.0f
+
+                    pianoRollViewRenderer.playTime = playTime
+
                     for(i in startIndex until jsonDetectedPitchRoot.detected.count()){
                         var detectedPitch = jsonDetectedPitchRoot.detected[i]
                         if((detectedPitch.frames + detectedPitch.pitch.count()) * 0.01f + 0.01f < pianoRollViewRenderer.playTime){
@@ -107,10 +108,10 @@ class MainActivity : AppCompatActivity() {
                             break;
                         }
                     }
-                    if( elapsedTime > 0.31 ){
+                    if( playTime > 0.31 ){
                         for(i in eventStartIndex until jsonDetectedEventRoot.detectedEvent.count()){
                             var detectedEvent = jsonDetectedEventRoot.detectedEvent[i]
-                            if(detectedEvent.time < elapsedTime.toFloat()/1000.0f - 0.31f - 0.2f){
+                            if(detectedEvent.time < playTime - 0.31f - 0.2f){
                                 pianoRollViewRenderer.addDetectedEvent(detectedEvent.time,detectedEvent.vocalNo,detectedEvent.vocalNo,detectedEvent.type)
                                 eventStartIndex = i + 1
                             }
@@ -120,11 +121,12 @@ class MainActivity : AppCompatActivity() {
                         }
                         for(i in judgmentStartIndex until judgmentBlocks.count()){
                             var j = judgmentBlocks[i]
-                            if(j.noteInfo.time < elapsedTime.toFloat()/1000.0f - 0.31f ){
+                            if(j.noteInfo.time < playTime - 0.31f ){
                                 j.matched = 1
-                                j.fixedTime = elapsedTime.toFloat()/1000.0f
+                                j.fixedTime = playTime - 0.31f
                                 pianoRollViewRenderer.addjudgmentBlock(j)
                                 judgmentStartIndex = i + 1
+                                //Log.d("MainActivity",j.toString())
                             }
                             else{
                                 break;

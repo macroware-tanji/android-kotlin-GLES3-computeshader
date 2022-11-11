@@ -1,4 +1,4 @@
-package jp.co.xing.gl.util
+package jp.co.xing.karaokejoysound.gles.util
 import android.opengl.GLES32
 enum class DataStoreUsage(val v:Int) {
     STREAM_DRAW(GLES32.GL_STREAM_DRAW),

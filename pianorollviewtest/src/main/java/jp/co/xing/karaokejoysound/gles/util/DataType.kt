@@ -1,4 +1,4 @@
-package jp.co.xing.gl.util
+package jp.co.xing.karaokejoysound.gles.util
 import android.opengl.GLES32
 enum class DataType(val v:Int) {
     BYTE(GLES32.GL_BYTE),
