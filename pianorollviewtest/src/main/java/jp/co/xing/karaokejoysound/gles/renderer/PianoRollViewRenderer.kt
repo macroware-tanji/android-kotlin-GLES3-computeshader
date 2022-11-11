@@ -435,36 +435,36 @@ class PianoRollViewRenderer(context: Context): GLSurfaceView.Renderer {
     override fun onSurfaceCreated(p0: GL10?, p1: EGLConfig?) {
         // Set the background frame color
         GLES32.glClearColor(0.0f, 0.0f, 0.0f, 0.0f)
-        texMapBK = TexMap0(context, R.drawable.pianoroleback_3x)
-        texMapSectionLine = TexMap0(context, R.drawable.sectionbar_3x)
-        texProgressBar = TexMap0(context, R.drawable.pianorole_cover_3x)
+        texMapBK = TexMap0(context, R.drawable.pianoroleback)
+        texMapSectionLine = TexMap0(context, R.drawable.sectionbar)
+        texProgressBar = TexMap0(context, R.drawable.pianorole_cover)
         rectangle = Rectangle(context)
 
-        texMapVibrato= TexMap0(context, R.drawable.img_vibrato_s_3x)
-        texMapKobushi= TexMap0(context, R.drawable.img_kobushi_s_3x)
-        texMapShakuri= TexMap0(context, R.drawable.img_shakuri_s_3x)
+        texMapVibrato= TexMap0(context, R.drawable.img_vibrato_s)
+        texMapKobushi= TexMap0(context, R.drawable.img_kobushi_s)
+        texMapShakuri= TexMap0(context, R.drawable.img_shakuri_s)
 
         var imgIndicatorIds = arrayOf(
-            R.drawable.marker00_3x,
-            R.drawable.marker01_3x,
-            R.drawable.marker02_3x,
-            R.drawable.marker03_3x,
-            R.drawable.marker04_3x)
+            R.drawable.marker00,
+            R.drawable.marker01,
+            R.drawable.marker02,
+            R.drawable.marker03,
+            R.drawable.marker04)
 
         for(i in imgIndicatorIds){
             var t = TexMap0(context,i)
             texMapNoteIndicator.add(t)
         }
-        texBlink0 = TexBlink0(context,R.drawable.icon_songline_3x)
+        texBlink0 = TexBlink0(context,R.drawable.icon_songline)
 
         var imgKiraIds = arrayOf(
-            R.drawable.kira11x_3x,
-            R.drawable.kira12x_3x,
-            R.drawable.kira13x_3x,
-            R.drawable.kira14x_3x,
-            R.drawable.kira21x_3x,
-            R.drawable.kira22x_3x,
-            R.drawable.kira23x_3x,
+            R.drawable.kira11x,
+            R.drawable.kira12x,
+            R.drawable.kira13x,
+            R.drawable.kira14x,
+            R.drawable.kira21x,
+            R.drawable.kira22x,
+            R.drawable.kira23x,
         )
         for(i in imgKiraIds){
             var t = TexBlink1(context,i)
@@ -527,6 +527,7 @@ class PianoRollViewRenderer(context: Context): GLSurfaceView.Renderer {
                     currJudgmentBlocks = mutableListOf()
 
                     processPreSongLineOnSectionChanged()
+                    Log.d(TAG,section.text)
                 }
                 currentNotes = getCurrentNotes(playTime,0.0f,false)
                 var scrollEndTime = scrollStartTime + SCROLL_TIME

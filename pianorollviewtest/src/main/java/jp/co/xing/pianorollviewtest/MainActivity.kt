@@ -26,7 +26,6 @@ data class DetectedPitch(var detected:List<DetectedPitchItem>)
 data class DetectedEventItem(var time:Float, var vocalNo:Int, var criteriaNo:Int, var type:String)
 data class DetectedEvent(var detectedEvent:List<DetectedEventItem>)
 
-
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
 
