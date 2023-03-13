@@ -1,0 +1,12 @@
+#version 320 es
+
+precision highp float;
+layout(binding = 1) uniform FlagInfo {
+    vec4 color;
+} info;
+
+out vec4 FragColor;
+
+void main() {
+    FragColor = info.color;//vec4(0.0f,1.0f,0.0f,1.0f);
+}

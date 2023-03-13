@@ -1,0 +1,52 @@
+#version 320 es
+
+layout (location = 0) in vec4 vPosition;
+layout(binding = 0) uniform VertInfo {
+    vec2 resolution;
+    vec2 center;
+    float len;
+    float time;
+    float period;
+    float score[5];
+//    float score1;
+//    float score2;
+//    float score3;
+//    float score4;
+} info;
+
+float convx(float x){
+    vec2 viewSize = info.resolution;
+    return x * 2.0f / viewSize.x - 1.0f;
+}
+
+float convy(float y){
+    vec2 viewSize = info.resolution;
+    return -( y * 2.0f / viewSize.y - 1.0f);
+}
+
+const float PI = 3.14159265359f;
+
+void main() {
+//    float score[5];
+//    score[0]=info.score0;
+//    score[1]=info.score1;
+//    score[2]=info.score2;
+//    score[3]=info.score3;
+//    score[4]=info.score4;
+    vec2 viewSize = info.resolution;
+    vec2 center = info.center;
+
+    float length = info.len;
+    float time = info.time;
+    float period = info.period;
+
+    vec2 v;
+    float len = int(vPosition.z) == 0 ? 0.0f : length * info.score[int(vPosition.z-1.0f)] * min(time/period,1.0f);
+    v.x = int(vPosition.z) == 0 ? center.x : center.x + len * cos(2.0f*PI*(90.0f + 72.0f * (vPosition.z-1.0f))/360.0f);
+    v.y = int(vPosition.z) == 0 ? center.y : center.y - len * sin(2.0f*PI*(90.0f + 72.0f * (vPosition.z-1.0f))/360.0f);
+
+    v.x = convx(v.x);
+    v.y = convy(v.y);
+
+    gl_Position = vec4(v, 0.0f,1.0f);
+}

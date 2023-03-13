@@ -48,8 +48,8 @@ class CompShader4(context: Context, compShaderName: String) {
         }
         ssboSize=2
         floatByte=4
-        width=512
-        height=512
+        width=128
+        height=128
         depth = 1
 
         arraySize = width*height
@@ -111,15 +111,15 @@ class CompShader4(context: Context, compShaderName: String) {
         GLES32.glBindBuffer(GLES32.GL_SHADER_STORAGE_BUFFER, ssbo[1]);
         var result = GLES32.glMapBufferRange(GLES32.GL_SHADER_STORAGE_BUFFER, 0, arraySize * floatByte, GLES32.GL_MAP_READ_BIT)
 
-//        var b = result as? ByteBuffer
-//        var f:FloatBuffer
-//        if(b!=null){
-//            b.order(ByteOrder.LITTLE_ENDIAN)
-//            f = b.asFloatBuffer()
-//            for(i in 0 until f.capacity()){
-//                Log.d("GLES3Test",f.get(i).toString())
-//            }
-//        }
+        var b = result as? ByteBuffer
+        var f:FloatBuffer
+        if(b!=null){
+            b.order(ByteOrder.LITTLE_ENDIAN)
+            f = b.asFloatBuffer()
+            for(i in 0 until f.capacity()){
+                Log.d("GLES3Test",f.get(i).toString())
+            }
+        }
 
         GLES32.glUnmapBuffer(GLES32.GL_SHADER_STORAGE_BUFFER);
     }

@@ -1,0 +1,60 @@
+#version 320 es
+
+layout (location = 0) in vec3 vPosition;
+layout(location = 1) in vec2 uv;
+
+layout(binding = 0) uniform VertInfo {
+    vec2 viewSize;
+    vec2 texSize;
+    vec2 texPos;
+    float period;
+    float direction;
+    float time;
+} info;
+
+//layout(binding = 0) buffer Input1 {
+//    vec2 viewSize;
+//    vec2 texSize;
+//    vec2 textPos;
+//} input1;
+
+out vec2 texCoord;
+
+float convx(float x){
+    vec2 viewSize = info.viewSize;
+    return x * 2.0f / viewSize.x - 1.0f;
+}
+
+float convy(float y){
+    vec2 viewSize = info.viewSize;
+    return -( y * 2.0f / viewSize.y - 1.0f);
+}
+
+const float PI = 3.14159265359;
+
+mat2 rotate2d(float _angle){
+    return mat2(cos(_angle),-sin(_angle),
+                sin(_angle),cos(_angle));
+}
+void main() {
+    vec2 texSize = info.texSize;
+    vec2 pos = info.texPos;
+    vec2 viewSize = info.viewSize;
+    float period = info.period;
+    float time = info.time;
+    float direction = info.direction > 0.0f ? 1.0f : -1.0f;
+
+    float angle = 2.0f * PI * fract(time/period) * direction;
+
+    vec2 v2;
+    v2.x = vPosition.x == 1.0f ? texSize.x/2.0f : -texSize.x/2.0f;
+    v2.y = vPosition.y == 1.0f ? -texSize.y/2.0f : texSize.x/2.0f;
+
+    v2 = v2 * rotate2d(angle);
+
+    v2.x = convx(v2.x + pos.x) ;
+    v2.y = convy(v2.y + pos.y);
+
+    gl_Position = vec4(v2, 1.0f,1.0f);
+    texCoord = uv;
+}

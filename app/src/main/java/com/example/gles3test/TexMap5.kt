@@ -310,6 +310,7 @@ class TexMap5(context: Context, drawableIds:Array<Int>) {
 
         uboInfo.unbind()
 //        ssboDims.unbind()
+        uboInfo2.unbind()
 
         texs[texIndex].unbind()
         vao.unbind()

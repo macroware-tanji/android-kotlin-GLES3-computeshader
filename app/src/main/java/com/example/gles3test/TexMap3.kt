@@ -9,48 +9,29 @@ import java.nio.ByteOrder
 import java.nio.FloatBuffer
 import java.nio.ShortBuffer
 
-
-private const val COORDS_PER_VERTEX = 3
-private var rectCoords = floatArrayOf(
-    // in counterclockwise order:
-    +1.0f, +1.0f, 0.0f,      // #0: Upper right
-    -1.0f, +1.0f, 0.0f,      // #1: Upper left
-    -1.0f, -1.0f, 0.0f,      // #2: Lower left
-    +1.0f, -1.0f, 0.0f,      // #3: Lower right
-)
-
-private const val UV_COORDS_PER_VERTEX = 2
-private var uvCoords = floatArrayOf(
-    // in counterclockwise order:
-    1.0f, 0.0f,                // #3: Lower right
-    0.0f, 0.0f,               // #2: Lower left
-    0.0f, 1.0f,               // #1: Upper left
-    1.0f, 1.0f,               // #0: Upper right
-)
-private var indexes = shortArrayOf(
-    0,1,2,
-    0,2,3
-)
-
 class TexMap3(context: Context, drawableId:Int) {
+    private val COORDS_PER_VERTEX = 3
+    private var rectCoords = floatArrayOf(
+        // in counterclockwise order:
+        +1.0f, +1.0f, 0.0f,      // #0: Upper right
+        -1.0f, +1.0f, 0.0f,      // #1: Upper left
+        -1.0f, -1.0f, 0.0f,      // #2: Lower left
+        +1.0f, -1.0f, 0.0f,      // #3: Lower right
+    )
 
+    private val UV_COORDS_PER_VERTEX = 2
+    private var uvCoords = floatArrayOf(
+        // in counterclockwise order:
+        1.0f, 0.0f,                // #3: Lower right
+        0.0f, 0.0f,               // #2: Lower left
+        0.0f, 1.0f,               // #1: Upper left
+        1.0f, 1.0f,               // #0: Upper right
+    )
 
-//    private val vertexShaderCode =
-//        "attribute vec4 vPosition;" +
-//                "void main() {" +
-//                "  gl_Position = vPosition;" +
-//                "}"
-//
-//    private val fragmentShaderCode =
-//        "precision mediump float;" +
-//                "uniform vec4 vColor;" +
-//                "void main() {" +
-//                "  gl_FragColor = vColor;" +
-//                "}"
-
-
-    // Set color with red, green, blue and alpha (opacity) values
-    //val color = floatArrayOf(0.63671875f, 0.76953125f, 0.22265625f, 1.0f)
+    private var indexes = shortArrayOf(
+        0,1,2,
+        0,2,3
+    )
 
     private var vertexBuffer: FloatBuffer =
         // (number of coordinate values * 4 bytes per float)
@@ -96,17 +77,6 @@ class TexMap3(context: Context, drawableId:Int) {
             }
         }
 
-//    fun loadShader(type: Int, shaderCode: String): Int {
-//
-//        // create a vertex shader type (GLES20.GL_VERTEX_SHADER)
-//        // or a fragment shader type (GLES20.GL_FRAGMENT_SHADER)
-//        return GLES32.glCreateShader(type).also { shader ->
-//
-//            // add the source code to the shader and compile it
-//            GLES32.glShaderSource(shader, shaderCode)
-//            GLES32.glCompileShader(shader)
-//        }
-//    }
     private fun loadShaderFromAssets(type: Int, shaderFileName: String): Int {
 
         // create a vertex shader type (GLES20.GL_VERTEX_SHADER)

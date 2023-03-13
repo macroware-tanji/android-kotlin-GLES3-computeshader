@@ -1,10 +1,11 @@
 #version 320 es
 
 layout (location = 0) in vec4 vPosition;
+
 layout(binding = 0) uniform VertInfo {
     vec2 resolution;
     vec2 center;
-    float length;
+    float len;
     float score[5];
     float time;
     float period;
@@ -25,7 +26,7 @@ const float PI = 3.14159265359;
 void main() {
     vec2 viewSize = info.resolution;
     vec2 center = info.center;
-    float length = info.length;
+    float length = info.len;
     float time = info.time;
     float period = info.period;
 

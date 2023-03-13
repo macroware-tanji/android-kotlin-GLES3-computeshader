@@ -1,11 +1,12 @@
 #version 320 es
 
 layout (location = 0) in vec4 vPosition;
+
 layout(binding = 0) uniform VertInfo {
+    vec4 color;
     vec2 resolution;
     vec2 rectSize;
     vec2 rectPos;
-    vec4 color;
     float edge;
 } info;
 

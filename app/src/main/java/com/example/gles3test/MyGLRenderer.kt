@@ -28,6 +28,9 @@ class MyGLRenderer (context: Context): GLSurfaceView.Renderer {
     //private lateinit var mCompShader3: CompShader3
     private lateinit var mCompShader4: CompShader4
     private lateinit var mLines: Lines
+    private lateinit var mTestDraw: TestDraw
+
+
     private var context: Context
     //private var width:Int=0
     //private var height:Int=0
@@ -49,7 +52,7 @@ class MyGLRenderer (context: Context): GLSurfaceView.Renderer {
         mCompShader = CompShader(context,512,512,1, GLES32.GL_RGBA32F,GLES32.GL_RGBA,GLES32.GL_FLOAT,"shader.es30-3.computeshader")
         mTextMap = TexMap(context,null)
         mTextMap2 = TexMap2(context)
-        mTextMap3 = TexMap3(context,R.drawable.img_vibrato_s_3x)
+        mTextMap3 = TexMap3(context,R.drawable.img_medal_rainbow)
         mTextMap4 = TexMap4(context,R.drawable.lucky_yotsuba_clover_girl, 4.0f,1.0f)
         var ids = arrayOf(R.drawable.score_kira1_3x, R.drawable.score_kira2_3x, R.drawable.score_kira3_3x)
         mTextMap5 = TexMap5(context,ids)
@@ -61,6 +64,7 @@ class MyGLRenderer (context: Context): GLSurfaceView.Renderer {
         mLines = Lines(context)
         mRectangle = Rectangle(context)
         mRadiation = Radiation(context)
+        mTestDraw= TestDraw(context)
 //        mCompShader2=CompShader2(context,"shader.es30-4.computeshader")
 //        mCompShader2.execute()
 
@@ -79,42 +83,53 @@ class MyGLRenderer (context: Context): GLSurfaceView.Renderer {
         //Log.d("TEST",elapsedTime.toString())
 
         GLES32.glBlendFunc(GLES32.GL_SRC_ALPHA, GLES32.GL_ONE_MINUS_SRC_ALPHA);
+        //GLES32.glBlendFunc(GLES32.GL_ONE, GLES32.GL_ONE);
         GLES32.glEnable(GLES32.GL_BLEND);
+        //GLES32.glDisable(GLES32.GL_BLEND);
         // Redraw background color
-        //GLES32.glClear(GLES32.GL_COLOR_BUFFER_BIT)
         //GLES32.glClearColor(0.3f, 0.5f, 0.8f, 1.0f)
+        //GLES32.glClear(GLES32.GL_COLOR_BUFFER_BIT)
         GLES32.glClearColor(0.0f, 0.0f, 0.0f, 0.0f)
-        GLES32.glClear(GLES32.GL_COLOR_BUFFER_BIT or GLES32.GL_DEPTH_BUFFER_BIT)
+        //GLES32.glClear(GLES32.GL_COLOR_BUFFER_BIT or GLES32.GL_DEPTH_BUFFER_BIT)
+        GLES32.glClear(GLES32.GL_COLOR_BUFFER_BIT)
 
-        mRadiation.draw(viewSize)
+        //mRadiation.draw(viewSize)
+        //mTestDraw.draw(viewSize)
         //mTriangle.draw()
         //mTextMap.draw()
 
         //mCompShader.execute()
         //mTextMap.draw(mCompShader.texId)
+        mTextMap.draw()
 
         //val viewSize = Vec2(width.toFloat(),height.toFloat())
         val texPos = Vec2(100.0f,400.0f)
         val texSize = Vec2(800.0f,200.0f)
-        mTextMap5.draw(viewSize,texSize, texPos)
+        //mTextMap5.draw(viewSize,texSize, texPos)
+
+        val texPos2_0 = Vec2(400.0f,400.0f)
+        //mTextMap4.draw(viewSize,Vec2(253.0f,253.0f),texPos2_0)
+        //GLES32.glDisable(GLES32.GL_BLEND);
+        //mTextMap3.draw(viewSize,texPos2_0)
+        //GLES32.glEnable(GLES32.GL_BLEND);
         val texPos2 = Vec2(10.0f,10.0f)
-        //mTextMap4.draw(viewSize,texPos2)
-        //mTextMap3.draw(viewSize,texPos2)
 
         //mTexBlink.draw(viewSize,texPos2,blinkStart,blinkDuration,elapsedTime,blinkFadeTime)
-        mTexBlink1.draw(viewSize,texPos2,blinkStart,blinkDuration,elapsedTime)
+        //mTexBlink1.draw(viewSize,texPos2,blinkStart,blinkDuration,elapsedTime)
         //mRectangle.draw(width.toFloat(),height.toFloat(),width.toFloat(),height.toFloat(),0.0f,0.0f,100.0f)
 
         //val viewSize = Vec2(width.toFloat(),height.toFloat())
+        //val rectSize = Vec2(800.0f,200.0f)
+        //val rectPos = Vec2(100.0f,viewSize.y - 200.0f)
         val rectSize = Vec2(800.0f,200.0f)
-        val rectPos = Vec2(100.0f,viewSize.y/4.0f - 100.0f)
-        val edge = 100.0f
+        val rectPos = Vec2(0.0f,0.0f)
+        val edge = 50.0f
         val color = Color(0.0f,1.0f,0.0f,1.0f)
         mRectangle.draw(viewSize,rectSize,rectPos,edge,color)
 
         var scores = arrayOf(1.0f,1.0f,1.0f,1.0f,1.0f)
-        val center = Vec2(viewSize.x/2.0f,viewSize.y/2.0f)
-        val color2 = Color(1.0f,0.0f,0.0f,1.0f)
+        val center = Vec2(viewSize.x/2.0f,viewSize.y - viewSize.x/2.0f)
+        val color2 = Color(0.0f,1.0f,0.0f,1.0f)
         mPentagon.draw(viewSize,center,viewSize.x/2.0f,scores,2.0f,color2)
         //mLines.draw()
     }

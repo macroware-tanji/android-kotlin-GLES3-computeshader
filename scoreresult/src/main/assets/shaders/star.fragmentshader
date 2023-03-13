@@ -1,0 +1,49 @@
+#version 320 es
+
+precision highp float;
+
+layout(binding = 0) uniform sampler2D texLoc;
+layout(binding = 1) uniform FragInfo {
+    float time;
+} info;
+in vec2 texCoord;
+
+out vec4 FragColor;
+const float PI = 3.14159265359;
+
+const int STAR_DURATION_1 =  int(4000.0 * ( 64.0 -   0.0 - 33.0) / 120.0);
+const int STAR_DURATION_2 =  int(4000.0 * (108.0 -  64.0 ) / 120.0);
+const int STAR_DURATION_3 =  int(4000.0 * (120.0 - 108.0 + 33.0) / 120.0);
+
+void main() {
+    int duration1 = STAR_DURATION_1;
+    int duration2 = STAR_DURATION_2;
+    int duration3 = STAR_DURATION_3;
+
+    int timems = int(info.time*1000.0f);
+
+    int phaseStart[6];
+
+    phaseStart[0] = 0;
+    phaseStart[1] = duration1;
+    phaseStart[2] = phaseStart[1] + duration2;
+    phaseStart[3] = phaseStart[2] + duration3;
+
+    int totalTimems = duration1 + duration2 + duration3;
+    timems %= totalTimems;
+
+    if( phaseStart[0] <= timems && timems < phaseStart[1] ){
+        FragColor = vec4(0,0,0,0);
+    }
+    else if( phaseStart[1] <= timems && timems < phaseStart[2] ){
+        FragColor = texture(texLoc, texCoord);
+
+        float rate = float(float(timems - phaseStart[1]) / float(phaseStart[2]-phaseStart[1]));
+        FragColor *= sin(PI * rate);
+    }
+    else if( phaseStart[2] <= timems && timems < phaseStart[3] ){
+        FragColor = vec4(0,0,0,0);
+    }
+    //FragColor = texture(texLoc, texCoord);
+    //FragColor = vec4(1.0f,0.0f,0.0f,1.0f);//texture(texLoc, texCoord);
+}

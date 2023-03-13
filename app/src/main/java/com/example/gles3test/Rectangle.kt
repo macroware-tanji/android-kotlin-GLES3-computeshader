@@ -7,7 +7,6 @@ import java.nio.ByteOrder
 import java.nio.FloatBuffer
 import java.nio.ShortBuffer
 
-
 class Rectangle(context: Context) {
     private val COORDS_PER_VERTEX = 3
     private var rectCoords = floatArrayOf(
@@ -74,6 +73,7 @@ class Rectangle(context: Context) {
     private var uboInfo0: UniformBufferObject = UniformBufferObject()
     private var uboInfo1: UniformBufferObject = UniformBufferObject()
     private var infoBuffer = FloatBuffer.allocate(11)
+    private var infoBuffer1 = FloatBuffer.allocate(11)
 
 
     init {
@@ -114,6 +114,7 @@ class Rectangle(context: Context) {
         vboVertex.bind()
         vboVertex.enable(0)
         vboVertex.pointer(COORDS_PER_VERTEX,DataType.FLOAT,false,0,0)
+        //vboVertex.disaable()
         vboVertex.unbind()
 
 //        vboUV.bind()
@@ -142,7 +143,7 @@ class Rectangle(context: Context) {
 
         uboInfo1.gen()
         uboInfo1.bind()
-        uboInfo1.bufferData(infoBuffer.capacity()*4,infoBuffer,DataStoreUsage.DYNAMIC_DRAW)
+        uboInfo1.bufferData(infoBuffer.capacity()*4,infoBuffer1,DataStoreUsage.DYNAMIC_DRAW)
         uboInfo1.bindBufferBase(1)
         uboInfo1.unbind()
     }
@@ -170,19 +171,20 @@ class Rectangle(context: Context) {
         //tex.bind()
 
         //var infoBuffer = FloatBuffer.allocate(6)
-        infoBuffer.put(0,viewSize.x)//resolution.x
-        infoBuffer.put(1,viewSize.y)//resolution.y
+        infoBuffer.put(0,color.r)//color.r
+        infoBuffer.put(1,color.g)//color.g
+        infoBuffer.put(2,color.b)//color.b
+        infoBuffer.put(3,color.a)//color.a
 
-        infoBuffer.put(2,rectSize.x)//rectSize.x
-        infoBuffer.put(3,rectSize.y)//rectSize.y
+        infoBuffer.put(4,viewSize.x)//resolution.x
+        infoBuffer.put(5,viewSize.y)//resolution.y
 
-        infoBuffer.put(4,rectPos.x)//rectPos.x
-        infoBuffer.put(5,rectPos.y)//rectPos.y
+        infoBuffer.put(6,rectSize.x)//rectSize.x
+        infoBuffer.put(7,rectSize.y)//rectSize.y
 
-        infoBuffer.put(6,color.r)//color.r
-        infoBuffer.put(7,color.g)//color.g
-        infoBuffer.put(8,color.b)//color.b
-        infoBuffer.put(9,color.a)//color.a
+        infoBuffer.put(8,rectPos.x)//rectPos.x
+        infoBuffer.put(9,rectPos.y)//rectPos.y
+
 
         infoBuffer.put(10,edge)//edge
 
@@ -190,8 +192,25 @@ class Rectangle(context: Context) {
         uboInfo0.bufferSubData(0,infoBuffer.capacity()*4,infoBuffer)
         uboInfo0.bindBufferBase(0)
 
+        infoBuffer1.put(0,color.r)//color.r
+        infoBuffer1.put(1,color.g)//color.g
+        infoBuffer1.put(2,color.b)//color.b
+        infoBuffer1.put(3,color.a)//color.a
+
+        infoBuffer1.put(4,viewSize.x)//resolution.x
+        infoBuffer1.put(5,viewSize.y)//resolution.y
+
+        infoBuffer1.put(6,rectSize.x)//rectSize.x
+        infoBuffer1.put(7,rectSize.y)//rectSize.y
+
+        infoBuffer1.put(8,rectPos.x)//rectPos.x
+        infoBuffer1.put(9,rectPos.y)//rectPos.y
+
+        infoBuffer1.put(10,edge)//edge
+
+
         uboInfo1.bind()
-        uboInfo1.bufferSubData(0,infoBuffer.capacity()*4,infoBuffer)
+        uboInfo1.bufferSubData(0,infoBuffer1.capacity()*4,infoBuffer1)
         uboInfo1.bindBufferBase(1)
 
         //ssboDims.bind()

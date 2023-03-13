@@ -1,0 +1,91 @@
+#version 320 es
+
+layout (location = 0) in vec3 vPosition;
+layout(location = 1) in vec2 uv;
+
+layout(binding = 0) uniform VertInfo {
+    vec2 viewSize;
+    vec2 texSize;
+    float expRate;
+    float angle;
+    float time;
+} info;
+
+//layout(binding = 0) buffer Input1 {
+//    vec2 viewSize;
+//    vec2 texSize;
+//    vec2 textPos;
+//} input1;
+
+out vec2 texCoord;
+
+float convx(float x){
+    vec2 viewSize = info.viewSize;
+    return x * 2.0f / viewSize.x - 1.0f;
+}
+
+float convy(float y){
+    vec2 viewSize = info.viewSize;
+    return -( y * 2.0f / viewSize.y - 1.0f);
+}
+
+const int STAR_DURATION_1 =  int(4000.0 * ( 64.0 -   0.0 - 33.0) / 120.0);
+const int STAR_DURATION_2 =  int(4000.0 * (108.0 -  64.0 ) / 120.0);
+const int STAR_DURATION_3 =  int(4000.0 * (120.0 - 108.0 + 33.0) / 120.0);
+
+void main() {
+
+    vec2 texSize = info.texSize;
+    vec2 viewSize = info.viewSize;
+    float expRate = info.expRate;
+    float angle = info.angle;
+    float time = info.time;
+
+    texSize *= expRate;
+
+    int duration1 = STAR_DURATION_1;
+    int duration2 = STAR_DURATION_2;
+    int duration3 = STAR_DURATION_3;
+
+    int timems = int(info.time * 1000.0f);
+
+    int phaseStart[6];
+
+    phaseStart[0] = 0;
+    phaseStart[1] = duration1;
+    phaseStart[2] = phaseStart[1] + duration2;
+    phaseStart[3] = phaseStart[2] + duration3;
+
+    int totalTimems = duration1 + duration2 + duration3;
+    timems %= totalTimems;
+
+    vec2 delta = vec2(0.0f,0.0f);
+
+    if( phaseStart[0] <= timems && timems < phaseStart[1] ){
+        texSize.x=0.0f;
+        texSize.y=0.0f;
+    }
+    else if( phaseStart[1] <= timems && timems < phaseStart[2] ){
+        float dist = float(float(timems - phaseStart[1]) / float(phaseStart[2]-phaseStart[1]));
+        //texSize.x += dist * con(angle);
+        //texSize.y += dist * sin(angle);
+        delta.x = dist * cos(angle);
+        delta.y = dist * sin(angle);
+    }
+    else if( phaseStart[2] <= timems && timems < phaseStart[3] ){
+        texSize.x=0.0f;
+        texSize.y=0.0f;
+    }
+
+    vec2 v2;
+    v2.x = vPosition.x == 1.0f ? texSize.x/2.0f : -texSize.x/2.0f;
+    v2.y = vPosition.y == 1.0f ? -texSize.y/2.0f : texSize.y/2.0f;
+
+    v2.x = convx(v2.x + viewSize.x/2.0f) ;
+    v2.y = convy(v2.y + viewSize.y/2.0f);
+
+    v2 += delta;
+
+    gl_Position = vec4(v2, 0.0f,1.0f);
+    texCoord = uv;
+}

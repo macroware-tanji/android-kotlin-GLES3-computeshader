@@ -1,0 +1,88 @@
+#version 320 es
+
+precision highp float;
+
+layout(binding = 0) uniform FlagInfo {
+    vec2 resolution;
+    float time;
+} info;
+
+out vec4 FragColor;
+
+float random(vec2 par){
+   return fract(sin(dot(par.xy,vec2(12.9898,78.233))) * 43758.5453);
+}
+
+vec2 random2(vec2 par){
+    float rand = random(par);
+    return vec2(rand, random(par+rand));
+}
+
+void main() {
+    vec2 resolution = info.resolution;
+    float time = info.time;
+    // Normalized pixel coordinates (from 0 to 1)
+    vec2 uv = gl_FragCoord.xy/resolution.xy;
+
+    //The ratio of the width and height of the screen
+    float widthHeightRatio = resolution.x/resolution.y;
+
+    float t = time * 0.05;
+    float dist = 0.0;
+#define layers 5.0
+    float scale = 16.0;
+    float depth;
+    float size;
+    //float rotationAngle = time * 0.2;
+
+    //vec2 offset;
+    vec2 local_uv;
+    vec2 index;
+    vec2 pos;
+    vec2 seed;
+    vec2 centre = vec2(0.5, 0.5);
+
+//    vec2x2 rotation = vec2x2(cos(rotationAngle), -sin(rotationAngle),
+//                         sin(rotationAngle),  cos(rotationAngle));
+
+    for (float i = 0.0; i < layers; i++)
+    {
+        depth = fract(i/layers + t);
+
+        //Move centre in a circle depending on the depth of the layer
+        //centre.x = 1.5;//0.5 + 0.1 * cos(t) * depth;
+        //centre.y = 1.5;//0.5 + 0.1 * sin(t) * depth;
+
+        //Get uv from the fragment coordinates, rotation and depth
+        uv = centre - gl_FragCoord.xy/resolution.xy;
+        uv.y /= widthHeightRatio;
+        //uv *= rotation;
+        uv *= mix(scale, 0.0, depth);
+
+        //The local cell
+        index = floor(uv);
+
+        //Local cell seed;
+        seed = 10.0 * i + index;
+
+        //The local cell coordinates
+        local_uv = fract(i + uv) - 0.5;
+
+        //Get a random position for the local cell
+        pos = 0.8 * (random2(seed) - 0.5);
+
+        //Get a random size
+        size = 0.01 + 0.02*random(seed);
+
+        //Get distance to the generated point, add fading to distant points
+        //Add the distance to the sum
+        dist += smoothstep(size, 0.0, length(local_uv-pos)) * min(1.0, depth*2.0);
+    }
+    float alpha = dist;
+
+    FragColor = vec4(vec3(dist),alpha);
+}
+
+//void main() {
+//  FragColor = vec4(1.0f,1.0f,1.0f,1.0f);
+//}

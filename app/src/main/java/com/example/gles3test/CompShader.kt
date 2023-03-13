@@ -35,16 +35,16 @@ class CompShader(context: Context, width: Int,height: Int, depth: Int,internalFo
         this.texId=IntBuffer.allocate(1);
         this.frame= 0.0f
 
-//        var buffer = FloatBuffer.allocate(width*height*4)
-//        for(y in 0 until height){
-//            for(x in 0 until width) {
-//                var index = (width*4) * y + x * 4;
-//                buffer.put(index+0,1.0f)
-//                buffer.put(index+1,1.0f)
-//                buffer.put(index+2,0.0f)
-//                buffer.put(index+3,1.0f)
-//            }
-//        }
+        var buffer = FloatBuffer.allocate(width*height*4)
+        for(y in 0 until height){
+            for(x in 0 until width) {
+                var index = (width*4) * y + x * 4;
+                buffer.put(index+0,1.0f)
+                buffer.put(index+1,1.0f)
+                buffer.put(index+2,1.0f)
+                buffer.put(index+3,1.0f)
+            }
+        }
 
         GLES32.glGenTextures(1, texId);
         GLES32.glBindTexture(GLES32.GL_TEXTURE_2D, texId[0]);
@@ -52,6 +52,7 @@ class CompShader(context: Context, width: Int,height: Int, depth: Int,internalFo
         GLES32.glTexParameteri(GLES32.GL_TEXTURE_2D, GLES32.GL_TEXTURE_MAG_FILTER, GLES32.GL_LINEAR);
         //GLES32.glTexImage2D(GLES32.GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format, type, buffer);
         GLES32.glTexStorage2D(GLES32.GL_TEXTURE_2D,1,internalFormat,this.width,this.height);
+        //GLES32.glTexSubImage2D(GLES32.GL_TEXTURE_2D,0,0,0,width,height,format,type,buffer)
         GLES32.glBindTexture(GLES32.GL_TEXTURE_2D, 0);
 
         val compShader: Int = loadShaderFromAssets(GLES32.GL_COMPUTE_SHADER, compShaderName)

@@ -3,10 +3,10 @@
 precision highp float;
 
 layout(binding = 1) uniform FlagInfo {
+    vec4 color;
     vec2 resolution;
     vec2 rectSize;
     vec2 rectPos;
-    vec4 color;
     float edge;
 } info;
 
@@ -27,8 +27,8 @@ float convy(float y){
 //}
 float box(vec2 p,vec2 c,vec2 size,float edge){
 	vec2 d=abs(p-c)-size+edge;
-	float l=length(max(d,0.))+min(max(d.x,d.y),0.);
-	return step(l-edge,0.);
+	float l=length(max(d,0.0f))+min(max(d.x,d.y),0.0f);
+	return step(l-edge,0.0f);
 }
 
 void main(){
@@ -48,4 +48,7 @@ void main(){
    	vec2 p=(gl_FragCoord.xy*2.-info.resolution)/info.resolution.x;
    	FragColor = vec4(info.color.xyz,box(p,center,rectSize,edge) * info.color.a);
     //FragColor.a=1.0f;
+
+    //FragColor = info.color;
+    //FragColor = vec4(1.0f,1.0f,0.0f,1.0f);//info.color;
 }

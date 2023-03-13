@@ -1,16 +1,17 @@
-#version 310 es
+#version 320 es
 
 uniform float roll;
 layout (rgba32f,binding = 0) writeonly uniform highp image2D data;
 layout (local_size_x = 32, local_size_y = 32) in;
+
 void main(void)
 {
     ivec2 storePos = ivec2(gl_GlobalInvocationID.xy);
     float localCoef = length(vec2(256, 256) - vec2(ivec2(gl_GlobalInvocationID.xy)));
-    float val = 0.5 + 0.5 * sin(localCoef * 0.05 + roll);
+    float val = 0.5f + 0.5f * sin(localCoef * 0.05f + roll);
     imageStore(
         data,
         storePos,
-        vec4(val, val, val, 0)
+        vec4(val, val, val, 1.0f)
         );
 }

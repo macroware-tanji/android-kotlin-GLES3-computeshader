@@ -1,0 +1,136 @@
+#version 320 es
+
+layout (location = 0) in vec3 vPosition;
+layout(location = 1) in vec2 uv;
+
+layout(binding = 0) uniform VertInfo {
+    vec2 viewSize;
+    vec2 texSize;
+    float time;
+} info;
+
+//layout(binding = 0) buffer Input1 {
+//    vec2 viewSize;
+//    vec2 texSize;
+//    vec2 textPos;
+//} input1;
+
+out vec2 texCoord;
+
+float convx(float x){
+    vec2 viewSize = info.viewSize;
+    return x * 2.0f / viewSize.x - 1.0f;
+}
+
+float convy(float y){
+    vec2 viewSize = info.viewSize;
+    return -( y * 2.0f / viewSize.y - 1.0f);
+}
+
+vec3 rotate(vec3 xyz, float alpha, float beta, float gamma)
+{
+    float x = xyz.x;
+    float y = xyz.y;
+    float z = xyz.z;
+
+    float x1 = x * cos(beta) + z * sin(beta);
+    float y1 = y;
+    float z1 = -x * sin(beta) + z * cos(beta);
+
+    float x2 = x1;
+    float y2 = y1 * cos(alpha) - z1 * sin(alpha);
+    float z2 = y1 * sin(alpha) + z1 * cos(alpha);
+
+    float x3 = x2 * cos(gamma) - y2 * sin(gamma);
+    float y3 = x2 * sin(gamma) + y2 * cos(gamma);
+    float z3 = z2;
+
+    return vec3(x3,y3,z3);
+}
+
+const int MEDAL_DURATION_1 = int(4000.0 * ( 34.0 -  0.0 - 33.0) / 120.0);
+const int MEDAL_DURATION_2 = int(4000.0 * ( 47.0 - 34.0 ) / 120.0);
+const int MEDAL_DURATION_3 = int(4000.0 * ( 54.0 - 47.0 ) / 120.0);
+const int MEDAL_DURATION_4 = int(4000.0 * ( 66.0 - 54.0 ) / 120.0);
+const int MEDAL_DURATION_5 = int(4000.0 * (120.0 - 66.0 + 33.0) / 120.0);
+
+const float PI = 3.14159265359;
+
+
+void main() {
+
+    vec2 texSize = info.texSize;
+    vec2 viewSize = info.viewSize;
+    float time = info.time;
+
+    //texSize *= 44.0f/65.0f;
+
+    int duration1 = MEDAL_DURATION_1;
+    int duration2 = MEDAL_DURATION_2;
+    int duration3 = MEDAL_DURATION_3;
+    int duration4 = MEDAL_DURATION_4;
+    int duration5 = MEDAL_DURATION_5;
+
+    float direction = 1.0;
+    int uperiod = duration2*2;
+    int timems = int(info.time * 1000.0f);
+
+    int phaseStart[6];
+
+    phaseStart[0] = 0;
+    phaseStart[1] = duration1;
+    phaseStart[2] = phaseStart[1] + duration2;
+    phaseStart[3] = phaseStart[2] + duration3;
+    phaseStart[4] = phaseStart[3] + duration4;
+    phaseStart[5] = phaseStart[4] + duration5;
+
+    int totalTimems = duration1 + duration2 + duration3 + duration4 + duration5;
+    timems %= totalTimems;
+
+    vec3 v3;
+    v3.x = vPosition.x == 1.0f ? texSize.x/2.0f : -texSize.x/2.0f;
+    v3.y = vPosition.y == 1.0f ? -texSize.y/2.0f : texSize.y/2.0f;
+    v3.z = 0.0f;
+
+    v3.x = convx(v3.x + viewSize.x/2.0f) ;
+    v3.y = convy(v3.y + viewSize.y/2.0f);
+
+    if( phaseStart[0] <= timems && timems < phaseStart[1] ){
+        //texSize.x=0.0f;
+        //texSize.y=0.0f;
+    }
+    else if( phaseStart[1] <= timems && timems < phaseStart[2] ){
+        timems = (timems - phaseStart[1]);
+        timems %= uperiod;
+        float time2 = float(timems) / float(uperiod);
+        float rad2 = PI * 2.0f * time2 * direction;
+
+        if(0.0f <= abs(rad2) && abs(rad2) < PI / 2.0f ){
+        }
+        else if(PI/2.0f <= abs(rad2) && abs(rad2) < PI ){
+            rad2 += PI * direction;
+        }
+        else if(PI <= abs(rad2) && abs(rad2) < PI * 2.0f * 3.0f / 4.0f ){
+            rad2 += PI * direction;
+        }
+        else if(PI * 2.0f * 3.0f / 4.0f <= abs(rad2) && abs(rad2) < PI * 2.0f ){
+        }
+
+        vec3 newPos = rotate(v3,0.0f,rad2,0.0f);
+        v3 = newPos;
+    }
+    else if( phaseStart[2] <= timems && timems < phaseStart[3] ){
+        //texSize.x=0.0f;
+        //texSize.y=0.0f;
+    }
+    else if( phaseStart[3] <= timems && timems < phaseStart[4] ){
+        float rate = 1.0f + 0.2f * sin(PI * float(timems-phaseStart[3]) / float(phaseStart[4]-phaseStart[3]));
+        v3.x = v3.x * rate;
+        v3.y = v3.y * rate;
+    }
+    else if( phaseStart[4] <= timems && timems < phaseStart[5] ){
+    }
+
+    gl_Position = vec4(v3, 1.0f);
+    texCoord = uv;
+}

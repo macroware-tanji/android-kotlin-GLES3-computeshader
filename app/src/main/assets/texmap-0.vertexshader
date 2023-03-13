@@ -1,6 +1,6 @@
 #version 320 es
 
-layout (location = 0) in vec3 vPosition;
+layout(location = 0) in vec3 vPosition;
 layout(location = 1) in vec2 uv;
 
 layout(binding = 0) uniform VertInfo {
@@ -8,12 +8,6 @@ layout(binding = 0) uniform VertInfo {
     vec2 texSize;
     vec2 texPos;
 } info;
-
-//layout(binding = 0) buffer Input1 {
-//    vec2 viewSize;
-//    vec2 texSize;
-//    vec2 textPos;
-//} input1;
 
 out vec2 texCoord;
 

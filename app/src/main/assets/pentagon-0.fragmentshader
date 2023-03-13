@@ -1,6 +1,7 @@
 #version 320 es
 
 precision highp float;
+
 layout(binding = 1) uniform FlagInfo {
     vec4 color;
 } info;

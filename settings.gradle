@@ -15,3 +15,4 @@ dependencyResolutionManagement {
 rootProject.name = "GLES3Test"
 include ':app'
 include ':pianorollviewtest'
+include ':scoreresult'
