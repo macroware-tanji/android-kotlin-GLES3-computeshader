@@ -1,5 +1,6 @@
 package com.example.gles3test
 
+import android.opengl.GLES32
 import android.opengl.GLSurfaceView
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle

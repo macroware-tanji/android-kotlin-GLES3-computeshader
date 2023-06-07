@@ -16,3 +16,6 @@ rootProject.name = "GLES3Test"
 include ':app'
 include ':pianorollviewtest'
 include ':scoreresult'
+include ':gles3jni'
+include ':msdftest'
+include ':sdfgentest'

@@ -2,19 +2,16 @@ package jp.co.xing.karaokejoysound.ui.karaoke.gles.util
 
 //import android.R
 import android.content.Context
-import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.Canvas
 import android.opengl.GLES32
-import androidx.annotation.DrawableRes
-import androidx.appcompat.content.res.AppCompatResources.getDrawable
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
 import java.nio.ShortBuffer
-import java.util.*
 
-class Medal(val context: Context, val drawableId:Int,val drawableId2:Int) {
+
+
+class MedalWoAnim(context: Context, drawableId:Int) {
     private val COORDS_PER_VERTEX = 3
     private var rectCoords = floatArrayOf(
         // in counterclockwise order:
@@ -36,7 +33,6 @@ class Medal(val context: Context, val drawableId:Int,val drawableId2:Int) {
         0,1,2,
         0,2,3
     )
-
 
 //    private val vertexShaderCode =
 //        "attribute vec4 vPosition;" +
@@ -123,46 +119,28 @@ class Medal(val context: Context, val drawableId:Int,val drawableId2:Int) {
         }
     }
 
-    fun xmlToBitmap(@DrawableRes drawableRes: Int): Bitmap? {
-        val drawable = getDrawable(context, drawableRes) ?: return null
-        val canvas = Canvas()
-        val bitmap = Bitmap.createBitmap(drawable.intrinsicWidth, drawable.intrinsicHeight, Bitmap.Config.ARGB_8888)
-        canvas.setBitmap(bitmap)
-        drawable.setBounds(0, 0, drawable.intrinsicWidth, drawable.intrinsicHeight)
-        drawable.draw(canvas)
-        return bitmap
-    }
-
     private var mProgram: Int
+    private var context:Context;
     //private var tex = IntBuffer.allocate(1)
 
     private var tex = Tex2D()
-    private var tex2 = Tex2D()
     private var ibo = IndexBufferObject()// IntBuffer.allocate(1)
     private var vboVertex = VertexBufferObject()//IntBuffer.allocate(1)
     private var vboUV = VertexBufferObject()//IntBuffer.allocate(1)
 
     private var uboInfo: UniformBufferObject = UniformBufferObject()
-    private var uboInfo2: UniformBufferObject = UniformBufferObject()
     //private var ssboDims: ShaderStrageBufferObject = ShaderStrageBufferObject()
 
-    private var bmpSize = Vec2(0.0f,0.0f)
-    private var bmpSize2 = Vec2(0.0f,0.0f)
+    var bmpSize = Vec2(0.0f,0.0f)
     //private var bmpWidth:Int=0
     //private var bmpHeight:Int=0
     private var vao = VertexArrayObject()
-    private var vertInfo = FloatBuffer.allocate(5)
-    private var flagInfo = FloatBuffer.allocate(1)
-
-    //private var startTime = Date().time
-    //private var period = 0.0f;
-    //private var direction = 0.0f;
+    private var vertInfo = FloatBuffer.allocate(4)
 
     init {
-        //this.period = period
-        //this.direction = direction
-        val vertexShader: Int = loadShaderFromAssets(GLES32.GL_VERTEX_SHADER, "shaders/medal.vertexshader")
-        val fragmentShader: Int = loadShaderFromAssets(GLES32.GL_FRAGMENT_SHADER, "shaders/medal.fragmentshader")
+        this.context = context
+        val vertexShader: Int = loadShaderFromAssets(GLES32.GL_VERTEX_SHADER, "shaders/medal-wo-anim.vertexshader")
+        val fragmentShader: Int = loadShaderFromAssets(GLES32.GL_FRAGMENT_SHADER, "shaders/medal-wo-anim.fragmentshader")
 
         // create empty OpenGL ES Program
         mProgram = GLES32.glCreateProgram().also {
@@ -178,17 +156,17 @@ class Medal(val context: Context, val drawableId:Int,val drawableId2:Int) {
         }
         vboVertex.gen()
         vboVertex.bind()
-        vboVertex.bufferData(rectCoords.size * 4,vertexBuffer,DataStoreUsage.STATIC_DRAW)
+        vboVertex.bufferData(rectCoords.size * 4,vertexBuffer, DataStoreUsage.STATIC_DRAW)
         vboVertex.unbind()
 
         vboUV.gen()
         vboUV.bind()
-        vboUV.bufferData(uvCoords.size * 4,uvBuffer,DataStoreUsage.STATIC_DRAW)
+        vboUV.bufferData(uvCoords.size * 4,uvBuffer, DataStoreUsage.STATIC_DRAW)
         vboUV.unbind()
 
         ibo.gen()
         ibo.bind()
-        ibo.bufferData(indexes.size * 2,indexBuffer,DataStoreUsage.STATIC_DRAW)
+        ibo.bufferData(indexes.size * 2,indexBuffer, DataStoreUsage.STATIC_DRAW)
         ibo.unbind()
 
         vao.gen()
@@ -196,12 +174,12 @@ class Medal(val context: Context, val drawableId:Int,val drawableId2:Int) {
 
         vboVertex.bind()
         vboVertex.enable(0)
-        vboVertex.pointer(COORDS_PER_VERTEX,DataType.FLOAT,false,0,0)
+        vboVertex.pointer(COORDS_PER_VERTEX, DataType.FLOAT,false,0,0)
         vboVertex.unbind()
 
         vboUV.bind()
         vboUV.enable(1)
-        vboUV.pointer(UV_COORDS_PER_VERTEX,DataType.FLOAT,false,0,0)
+        vboUV.pointer(UV_COORDS_PER_VERTEX, DataType.FLOAT,false,0,0)
         vboUV.unbind()
 
         ibo.bind()
@@ -225,25 +203,6 @@ class Medal(val context: Context, val drawableId:Int,val drawableId2:Int) {
         tex.imgae2D(0,bmp,0)
         tex.unbind()
 
-        val options2 = BitmapFactory.Options()
-        options2.inScaled = false //密度によるサイズ変更をキャンセル
-        val bmp2 = xmlToBitmap(drawableId2)//BitmapFactory.decodeResource(context.resources, drawableId2,options2)
-        //var config = bmp.config
-
-        bmp2?.let {
-            bmpSize2.x = it.width.toFloat()
-            bmpSize2.y = it.height.toFloat()
-
-            tex2.gen()
-            tex2.bind()
-            tex2.minFilter(MinFILTER.LINEAR)
-            tex2.magFilter(MagFILTER.LINEAR)
-            tex2.imgae2D(0,it,0)
-            tex2.unbind()
-        }
-
-
-
 //        GLES32.glGenTextures(1,tex)
 //        //GLES32.glActiveTexture(GLES32.GL_TEXTURE0);
 //        GLES32.glBindTexture(GLES32.GL_TEXTURE_2D, tex[0]);
@@ -266,15 +225,10 @@ class Medal(val context: Context, val drawableId:Int,val drawableId2:Int) {
 
         uboInfo.gen()
         uboInfo.bind()
-        uboInfo.bufferData(vertInfo.capacity()*4,vertInfo,DataStoreUsage.DYNAMIC_DRAW)
+        uboInfo.bufferData(vertInfo.capacity()*4,vertInfo, DataStoreUsage.DYNAMIC_DRAW)
         uboInfo.bindBufferBase(0)
         uboInfo.unbind()
 
-        uboInfo2.gen()
-        uboInfo2.bind()
-        uboInfo2.bufferData(flagInfo.capacity()*4,flagInfo,DataStoreUsage.DYNAMIC_DRAW)
-        uboInfo2.bindBufferBase(1)
-        uboInfo2.unbind()
 //        ssboDims.gen()
 //        ssboDims.bind()
 //        ssboDims.bufferData(dims.capacity()*4,dims,DataStoreUsage.DYNAMIC_DRAW)
@@ -288,11 +242,11 @@ class Medal(val context: Context, val drawableId:Int,val drawableId2:Int) {
 //    private val vertexStride: Int = COORDS_PER_VERTEX * 4 // 4 bytes per vertex
 //    private val uvStride: Int = UV_COORDS_PER_VERTEX * 4 // 4 bytes per vertex
 
-    fun draw(viewSize:Vec2,time:Float) {
-        draw(viewSize,viewSize,time)
+    fun draw(viewSize: Vec2) {
+        draw(viewSize,viewSize)
     }
 
-    fun draw(viewSize:Vec2, texSize:Vec2,time:Float) {
+    fun draw(viewSize: Vec2, texSize: Vec2) {
         // Add program to OpenGL ES environment
         GLES32.glUseProgram(mProgram)
         vao.bind()
@@ -300,27 +254,17 @@ class Medal(val context: Context, val drawableId:Int,val drawableId2:Int) {
         tex.active(0)
         tex.bind()
 
-        tex2.active(1)
-        tex2.bind()
-
-        //var time = (Date().time - startTime)/1000.0f
-
         //var dims = FloatBuffer.allocate(4)
         vertInfo.put(0,viewSize.x)
         vertInfo.put(1,viewSize.y)
         vertInfo.put(2,texSize.x)
         vertInfo.put(3,texSize.y)
-        vertInfo.put(4,time)
+        //vertInfo.put(4,texPos.x)
+        //vertInfo.put(5,texPos.y)
 
         uboInfo.bind()
         uboInfo.bufferSubData(0,vertInfo.capacity()*4,vertInfo)
         uboInfo.bindBufferBase(0)
-
-        flagInfo.put(0,time)
-
-        uboInfo2.bind()
-        uboInfo2.bufferSubData(0,flagInfo.capacity()*4,flagInfo)
-        uboInfo2.bindBufferBase(1)
 
 //        ssboDims.bind()
 //        ssboDims.bufferSubData(0,dims.capacity()*4,dims)
@@ -328,7 +272,6 @@ class Medal(val context: Context, val drawableId:Int,val drawableId2:Int) {
         GLES32.glDrawElements(GLES32.GL_TRIANGLES, 6, GLES32.GL_UNSIGNED_SHORT, 0);
 
         uboInfo.unbind()
-        uboInfo2.unbind()
 //        ssboDims.unbind()
 
         tex.unbind()

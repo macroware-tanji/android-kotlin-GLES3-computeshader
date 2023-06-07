@@ -4,7 +4,6 @@ import android.content.Context
 import android.opengl.GLES32
 import android.opengl.GLSurfaceView
 import android.util.Log
-import jp.co.xing.karaokejoysound.MainActivity
 import jp.co.xing.karaokejoysound.R
 import jp.co.xing.karaokejoysound.ui.karaoke.gles.util.*
 import java.util.*
@@ -12,7 +11,7 @@ import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 import kotlin.math.PI
 
-class MedalAnimRenderer(val context: Context, val medalResId:Int, val enableAnimation:Boolean): GLSurfaceView.Renderer {
+class MedalAnimRenderer(val context: Context, val medalResId:Int, var enableAnimation:Boolean): GLSurfaceView.Renderer {
     companion object {
         val TAG = MedalAnimRenderer::class.simpleName
     }
@@ -33,7 +32,7 @@ class MedalAnimRenderer(val context: Context, val medalResId:Int, val enableAnim
     )
 
     private var viewSize = Vec2(0.0f,0.0f)
-    private lateinit var texMap0: TexMap0
+    private lateinit var medalWoAnim: MedalWoAnim
     private lateinit var texSize:Vec2
     private lateinit var texPos:Vec2
 
@@ -43,7 +42,7 @@ class MedalAnimRenderer(val context: Context, val medalResId:Int, val enableAnim
     private lateinit var star:Star
     private lateinit var starTexSize:Vec2
 
-    private lateinit var medal: Medal
+    private lateinit var medal: MedalAnim
     private lateinit var medalTexSize:Vec2
 
     private var startTime:Long = 0
@@ -58,10 +57,10 @@ class MedalAnimRenderer(val context: Context, val medalResId:Int, val enableAnim
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         GLES32.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
-        texMap0 = TexMap0(context,medalResId)
+        medalWoAnim = MedalWoAnim(context,medalResId)
         starCircle= StarCircle(context, R.drawable.star_circle)
         star = Star(context,R.drawable.star)
-        medal = Medal(context,R.drawable.img_medal01_rainbow,R.drawable.img_medal00_gray)
+        medal = MedalAnim(context,medalResId,R.drawable.img_medal00_gray)
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
@@ -126,7 +125,7 @@ class MedalAnimRenderer(val context: Context, val medalResId:Int, val enableAnim
                     timeMSec = (currTime - startTime)
                     timeSec = timeMSec/1000f
                     //nextCycleStart += 4.0f
-                    //isAnimationEnable = false
+                    enableAnimation = false
                 }
                 for(i in angles.indices){
                     var random = 180.0f * Math.random().toFloat() / angles.size.toFloat()
@@ -140,7 +139,7 @@ class MedalAnimRenderer(val context: Context, val medalResId:Int, val enableAnim
         }
 
         if(!enableAnimation){
-            drawMedalWoAnim()
+            medalWoAnim.draw(viewSize,texSize)
         }
         else{
             medal.draw(viewSize,texSize,timeSec)
@@ -152,8 +151,5 @@ class MedalAnimRenderer(val context: Context, val medalResId:Int, val enableAnim
                 star.draw(viewSize,starTexSize,expRates[i],angles[i],timeSec)
             }
         }
-    }
-    fun drawMedalWoAnim(){
-        texMap0.draw(viewSize,texSize,texPos)
     }
 }

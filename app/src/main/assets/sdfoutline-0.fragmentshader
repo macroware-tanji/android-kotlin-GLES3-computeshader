@@ -1,0 +1,42 @@
+#version 320 es
+
+precision highp float;
+
+layout(binding = 0) uniform sampler2D Texture0;
+layout(binding = 1) uniform FragInfo {
+    vec4 color;
+    vec4 outlineColor;
+} info;
+
+float smoothing = 0.1f;
+float buf = 0.1f;
+float opacity = 1.0f;
+float outlineSize=0.4f;
+
+in vec2 texCoord;
+out vec4 FragColor;
+
+void main() {
+//    float distance = texture(Texture0, texCoord).a;
+//    float alpha = smoothstep(buf - smoothing, buf + smoothing, distance);
+//
+//    float border = smoothstep(buf + outlineSize - smoothing, buf + outlineSize + smoothing, distance);
+//    FragColor = vec4(mix(info.outlineColor.rgb, info.color.rgb, border), 1.) * alpha * opacity;
+
+
+	float d = texture(Texture0, texCoord).a;
+
+	float od = (d - 0.2f);
+	float outlineAlpha = clamp(od / fwidth(od) + 0.5, 0.0, 1.0);
+
+	float td = (d - 0.5f);
+    float textAlpha = clamp(td / fwidth(td) + 0.5f, 0.0f, 1.0f);
+
+    float baseAlpha = (outlineAlpha - textAlpha);
+
+    vec4 color;
+	color.rgb = mix(info.outlineColor.rgb, info.color.rgb, textAlpha);
+	color.a = baseAlpha * info.outlineColor.a + textAlpha * info.color.a;
+
+	FragColor = color;
+}

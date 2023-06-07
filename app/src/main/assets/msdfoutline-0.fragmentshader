@@ -1,0 +1,45 @@
+#version 320 es
+
+precision highp float;
+
+layout(binding = 0) uniform sampler2D Texture0;
+layout(binding = 1) uniform FragInfo {
+    vec4 color;
+    vec4 outlineColor;
+} info;
+
+in vec2 texCoord;
+out vec4 FragColor;
+
+float median(float r, float g, float b)
+{
+	return max(min(r, g), min(max(r, g), b));
+}
+
+void main() {
+	ivec2 size = textureSize(Texture0, 0);
+	const float pxRange = 4.0;
+	vec2 msdfUnit = (pxRange / vec2(size));
+
+	vec3 s = texture(Texture0, texCoord).rgb;
+	float d = median(s.r, s.g, s.b);
+
+    float od = (d - 0.5);
+	float outlineAlpha = clamp(od * dot(msdfUnit, 0.5 / fwidth(texCoord)) + 0.5, 0.0, 1.0);
+
+	float td = (d - 0.7);
+	float textAlpha = clamp(td * dot(msdfUnit, 0.5 / fwidth(texCoord)) + 0.5, 0.0, 1.0);
+
+    float baseAlpha = (outlineAlpha - textAlpha);
+
+    vec4 color;
+    color.rgb = mix(info.outlineColor.rgb, info.color.rgb, textAlpha);
+    //color.a = 1.0f;
+    //color.rgb *= baseAlpha * info.outlineColor.a + textAlpha * info.color.a;
+    color.a = baseAlpha * info.outlineColor.a + textAlpha * info.color.a;
+
+  	FragColor = color;
+
+//	vec4 color = vec4(info.color.rgb, info.color.a * textAlpha);
+//	FragColor = color;
+}
